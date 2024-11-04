@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+
+Disallow: /api/
+Disallow: /fonts/
+Disallow: /admin/
+
+Sitemap: https://www.nodecode.com/sitemap.xml
