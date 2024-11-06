@@ -1,4 +1,4 @@
-FROM rust:slim AS base
+FROM rust:slim AS test-base
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV TZ=UTC
@@ -37,7 +37,10 @@ RUN npm install
 
 COPY . .
 
+WORKDIR /app/src-tauri
+
+RUN cargo build
 
 EXPOSE 3000 4000
 
-CMD ["cargo", "tauri", "dev"]
+CMD ["sh", "-c", "cargo test && cd /app && npm test"]
