@@ -1,0 +1,38 @@
+FROM ubuntu:20.04 AS base
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV TZ=UTC
+
+RUN apt-get update && apt-get install -y \
+    curl \
+    gnupg2 \
+    lsb-release \
+    libgtk-3-dev \
+    libsoup2.4-dev \
+    libjavascriptcoregtk-4.0-dev \
+    libglib2.0-dev \
+    libcairo2-dev \
+    libpango1.0-dev \
+    libgdk-pixbuf2.0-dev \
+    libatk1.0-dev \
+    libwebkit2gtk-4.0-dev \
+    pkg-config \
+    tzdata \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && \
+    apt-get install -y nodejs
+
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | bash -s -- -y
+ENV PATH="/root/.cargo/bin:${PATH}"
+
+WORKDIR /app
+
+COPY package.json package-lock.json ./
+RUN npm install --f
+
+COPY . .
+
+EXPOSE 3000 4000
+
+CMD ["npm", "run", "tauri", "dev"]

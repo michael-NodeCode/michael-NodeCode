@@ -1,0 +1,18 @@
+# Dockerfile.frontend
+FROM node:18 AS builder
+
+# Set working directory and install dependencies
+WORKDIR /app
+
+COPY package.json package-lock.json ./
+RUN npm install
+
+# Copy frontend source files
+COPY ./src ./src
+COPY ./public ./public
+
+# Expose the port for the Next.js app
+EXPOSE 3000
+
+# Start the Next.js app in development mode
+CMD ["npm", "run", "dev"]

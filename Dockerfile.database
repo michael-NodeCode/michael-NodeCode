@@ -1,0 +1,3 @@
+FROM surrealdb/surrealdb:latest
+
+CMD ["surreal", "start", "--log", "trace", "--user", "root", "--pass", "root", "file:///surrealdb/data"]

@@ -23,3 +23,5 @@ serde = { version = "1.0", features = ["derive"] }
 log = "0.4"
 tauri = { version = "2.0.6", features = [] }
 tauri-plugin-log = "2.0.0-rc"
+tokio = { version = "1", features = ["full", "macros", "rt-multi-thread"] }
+# surrealdb = { version = "2.0", features = ["kv-rocksdb", "kv-mem", "kv-fdb-7_1", "kv-tikv"] }
