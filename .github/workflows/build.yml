@@ -66,7 +66,22 @@ jobs:
             librsvg2-dev \
             patchelf \
             pkg-config \
-            libglib2.0-dev 
+            libglib2.0-dev \
+            libgdk-pixbuf2.0-dev \
+            libatk1.0-dev \
+            libwebkit2gtk-4.1-dev \
+            libcairo2-dev \
+            libsoup2.4-dev \
+            libsoup-3.0-dev \
+            libjavascriptcoregtk-4.1-dev \
+            libudev-dev \
+            libxcb1-dev \
+            libxcb-xfixes0-dev \
+            curl \
+            build-essential \
+            tzdata \
+            libssl-dev \
+            && rm -rf /var/lib/apt/lists/*
       - name: install frontend dependencies
         run: npm install 
       - uses: tauri-apps/tauri-action@v0
