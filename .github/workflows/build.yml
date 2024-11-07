@@ -80,6 +80,17 @@ jobs:
             tzdata \
             libssl-dev \
             && sudo rm -rf /var/lib/apt/lists/* && sudo apt-get clean && sudo apt-get update
+          
+          # Make sure pkg-config can find glib
+          echo "Checking if pkg-config can find glib-2.0"
+          pkg-config --libs --cflags glib-2.0
+          if [ $? -ne 0 ]; then
+            echo "glib-2.0 not found, setting PKG_CONFIG_PATH"
+            export PKG_CONFIG_PATH=/usr/lib/pkgconfig:/usr/local/lib/pkgconfig
+          fi
+          
+          # Check again if glib is now found
+          pkg-config --libs --cflags glib-2.0
       - name: install frontend dependencies
         run: npm install 
       - uses: tauri-apps/tauri-action@v0
