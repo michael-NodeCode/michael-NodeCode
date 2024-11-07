@@ -18,7 +18,7 @@ export default function Home() {
   const [color, setColor] = useState('text-green-400');
   async function greet() {
     try {
-      setGreetMsg(await invoke('greet', { name }));
+      setGreetMsg(await invoke('greet'));
     } catch (error) {
       console.error(error);
       setColor('text-red-400');

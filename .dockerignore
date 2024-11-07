@@ -1,0 +1,10 @@
+node_modules
+dist
+target
+build
+.cache
+.git
+.env
+Dockerfile*
+docker-compose.yml
+*.md

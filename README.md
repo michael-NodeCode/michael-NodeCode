@@ -23,3 +23,9 @@ npm run build
 ### build the app
 npm run tauri build
 ```
+
+### Production
+```bash
+docker-compose -f docker-build-compose.yml build  
+docker-compose -f docker-build-compose.yml up   
+```
