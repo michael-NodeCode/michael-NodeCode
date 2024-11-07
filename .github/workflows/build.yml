@@ -69,6 +69,8 @@ jobs:
             patchelf \
             build-essential \
             libglib2.0-dev \
+            glib-2.0 \
+            glib-2.0-devel \
             libgdk-pixbuf2.0-dev \
             libatk1.0-dev \
             libcairo2-dev \
@@ -79,15 +81,9 @@ jobs:
             curl \
             libssl-dev \
             tzdata \
-            && sudo rm -rf /var/lib/apt/lists/* && sudo apt-get clean
-
-      - name: Set PKG_CONFIG_PATH
-        run: |
-          echo "PKG_CONFIG_PATH=/usr/lib/x86_64-linux-gnu/pkgconfig" >> $GITHUB_ENV
-
-      - name: Check pkg-config for gobject-2.0
-        run: |
-          pkg-config --cflags --libs gobject-2.0
+            && sudo rm -rf /var/lib/apt/lists/* && sudo apt-get clean 
+          echo "PKG_CONFIG_PATH=/usr/lib/x86_64-linux-gnu/pkgconfig" >> $GITHUB_ENV 
+          pkg-config --cflags --libs gobject-2.0 gio-2.0
 
       - name: install frontend dependencies
         run: npm install 
