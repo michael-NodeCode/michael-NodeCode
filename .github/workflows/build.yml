@@ -69,7 +69,6 @@ jobs:
             patchelf \
             build-essential \
             libglib2.0-dev \
-            libgobject-2.0-dev \ 
             libgdk-pixbuf2.0-dev \
             libatk1.0-dev \
             libcairo2-dev \
