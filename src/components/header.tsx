@@ -1,113 +1,125 @@
 'use client';
-
 import React, { useEffect, useState } from 'react';
-import { navLinks } from '../constants';
-import Link from 'next/link';
-import { BsMenuUp } from 'react-icons/bs';
-import { FaWindowClose } from 'react-icons/fa';
+import { MdKeyboardArrowLeft, MdKeyboardArrowRight } from 'react-icons/md';
+import { FaCircle } from 'react-icons/fa6';
 import Image from 'next/image';
+import { navLinks } from '@constants/index';
+import { invoke } from '@tauri-apps/api/core';
 
-function Header() {
-  const [active, setActive] = useState('');
+function Header({
+  heading,
+  subHeading,
+}: {
+  heading: string;
+  subHeading: string;
+}) {
   const [toggle, setToggle] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
+  const [active, setActive] = useState('');
+  const [showSidebarIcons, setShowSidebarIcons] = useState(false);
 
+  const [color, setColor] = useState('text-green-400');
+  async function greet() {
+    try {
+      await invoke('greet').then(() => {
+        setColor('text-green-400');
+      });
+    } catch (error) {
+      console.error(error);
+      setColor('text-red-400');
+    }
+  }
   useEffect(() => {
-    const handleScroll = () => {
-      const scrollTop = window.scrollY;
-      if (scrollTop > 1) {
-        setScrolled(true);
-      } else {
-        setScrolled(false);
-      }
-    };
+    greet();
+  });
 
-    window.addEventListener('scroll', handleScroll);
-
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+  console.log(color, 'The backend status');
 
   return (
     <nav
-      className={`max-w-full w-full sm:px-16 px-6 py-5 border-0 border-red-500 border-solid flex items-center justify-center fixed z-20 text-secondary ${
-        scrolled
-          ? 'bg-primary shadow-secondary backdrop-blur-sm'
-          : 'bg-transparent'
-      }`}
+      className={`max-w-full w-full sm:px-16 px-6 py-0 border-0 border-red-500 border-solid flex items-center justify-center fixed z-20 text-secondary bg-secondary transition-all duration-300 ease-in-out `}
     >
       <div className="w-full flex justify-between items-center text-inherit">
-        <Link
-          href="/"
-          className="flex items-center gap-2"
-          onClick={() => {
-            setActive('');
-            window.scrollTo(0, 0);
-          }}
-        >
+        <span className="flex items-center">
+          <Image
+            src={'/images/logo.png'}
+            width={72}
+            height={72}
+            alt="Node logo"
+            className="w-9 h-9 object-contain rounded-lg"
+            onClick={() => {
+              setShowSidebarIcons(!showSidebarIcons);
+            }}
+          />
+          <div className="flex flex-row justify-start items-center text-left text-primary -ml-2">
+            <MdKeyboardArrowLeft className="text-7xl leading-none -mr-4" />
+            <span className="flex flex-col justify-start items-start">
+              <p className="text-xs font-bold">{heading}</p>
+              <p className="font-extrabold text-2xl leading-none">
+                {subHeading}
+              </p>
+            </span>
+            <MdKeyboardArrowRight className="text-7xl leading-none -ml-4" />
+          </div>
+        </span>
+        <span className="flex flex-row items-center">
           <Image
             src={'/images/logo.png'}
             width={72}
             height={72}
             alt="logo"
             className="w-9 h-9 object-contain rounded-lg"
+            onClick={() => {
+              setToggle(!toggle);
+            }}
           />
-          <p className="text-heading md:text-3xl font-extrabold cursor-pointer">
-            NodeCode
-          </p>
-        </Link>
-        <span className="flex flex-row justify-between gap-10 max-lg:gap-6 max-md:gap-6 items-center">
-          <ul className="list-none hidden sm:flex flex-row gap-10 max-md:gap-6">
+        </span>
+        <div
+          className={`${
+            !toggle ? 'hidden' : 'flex'
+          } p-6 bg-black shadow-primary w-full text-inherit absolute top-16 right-0 min-h-[100vh] my-2 min-w-[140px] z-10 overflow-hidden`}
+        >
+          <ul className="list-none flex justify-start flex-1 flex-col gap-8 mt-16 items-center">
             {navLinks.map((nav) => (
               <li
                 key={nav.id}
-                className={`${
-                  active === nav.title ? 'text-inherit' : 'text-secondary'
-                } text-[18px] font-medium cursor-pointer`}
-                onClick={() => setActive(nav.title)}
+                className={`font-poppins font-medium cursor-pointer text-heading ${
+                  active === nav.title ? '' : 'text-inherit'
+                }`}
+                onClick={() => {
+                  setToggle(!toggle);
+                  setActive(nav.title);
+                }}
               >
                 <a href={`${nav.id}`}>{nav.title}</a>
               </li>
             ))}
+            <li className="flex flex-row justify-center items-center text-center space-x-2 font-poppins font-medium cursor-pointer text-heading">
+              <span>Connection</span>{' '}
+              <FaCircle className={`${color} text-xl mt-2`} />
+            </li>
           </ul>
-        </span>
-        <div className="sm:hidden justify-end items-center">
-          {toggle ? (
-            <>
-              <FaWindowClose
-                className={`text-inherit font-black md:text-[60px] sm:text-[50px] xs:text-[40px] text-[30px] h-[28px] w-[28px]`}
-                onClick={() => setToggle(!toggle)}
-              />
-            </>
-          ) : (
-            <>
-              <BsMenuUp
-                className={`text-inherit font-black md:text-[60px] sm:text-[50px] xs:text-[40px] text-[30px] h-[28px] w-[28px]`}
-                onClick={() => setToggle(!toggle)}
-              />
-            </>
-          )}
-          <div
-            className={`${
-              !toggle ? 'hidden' : 'flex'
-            } p-6 bg-black shadow-primary w-full text-inherit absolute top-16 right-0 min-h-[100vh] my-2 min-w-[140px] z-10 rounded-xl overflow-hidden`}
-          >
-            <ul className="list-none flex justify-start flex-1 flex-col gap-8 mt-16 items-center">
-              {navLinks.map((nav) => (
-                <li
-                  key={nav.id}
-                  className={`font-poppins font-medium cursor-pointer text-heading ${
-                    active === nav.title ? '' : 'text-inherit'
-                  }`}
-                  onClick={() => {
-                    setToggle(!toggle);
-                    setActive(nav.title);
-                  }}
-                >
-                  <a href={`${nav.id}`}>{nav.title}</a>
-                </li>
-              ))}
-            </ul>
-          </div>
+        </div>
+        <div
+          className={`${
+            !showSidebarIcons ? 'hidden' : 'flex'
+          } p-6 bg-secondary shadow-primary text-inherit absolute top-16 left-0 h-max my-2 w-max z-10 overflow-hidden sm:hidden`}
+        >
+          <span className="flex flex-col justify-start items-center text-center space-y-6">
+            <Image
+              src={'/images/logo.png'}
+              width={72}
+              height={72}
+              alt="Toggle Menu"
+              className="w-10 h-10 object-contain rounded-lg cursor-pointer"
+            />
+            <Image
+              src={'/images/logo.png'}
+              width={72}
+              height={72}
+              alt="Toggle Menu"
+              className="w-10 h-10 object-contain rounded-lg cursor-pointer"
+            />
+          </span>
         </div>
       </div>
     </nav>
