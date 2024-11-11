@@ -32,7 +32,7 @@ function Header({
     greet();
   });
 
-  console.log(color, 'The backend status');
+  console.log(color, 'The backend status | FE');
 
   return (
     <nav
@@ -63,7 +63,7 @@ function Header({
         </span>
         <span className="flex flex-row items-center">
           <Image
-            src={'/images/logo.png'}
+            src={'/images/profile.png'}
             width={72}
             height={72}
             alt="logo"
@@ -106,14 +106,14 @@ function Header({
         >
           <span className="flex flex-col justify-start items-center text-center space-y-6">
             <Image
-              src={'/images/logo.png'}
+              src={'/images/calendar.png'}
               width={72}
               height={72}
               alt="Toggle Menu"
               className="w-10 h-10 object-contain rounded-lg cursor-pointer"
             />
             <Image
-              src={'/images/logo.png'}
+              src={'/images/library.png'}
               width={72}
               height={72}
               alt="Toggle Menu"

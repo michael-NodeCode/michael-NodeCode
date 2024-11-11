@@ -16,6 +16,7 @@ import '@blocknote/mantine/style.css';
 import { useEffect, useState } from 'react';
 import { HiOutlineGlobeAlt } from 'react-icons/hi';
 import { invoke } from '@tauri-apps/api/core';
+import log from '@utils/logger';
 
 const insertHelloWorldItem = (editor: BlockNoteEditor) => ({
   title: 'Insert reference Section below',
@@ -134,23 +135,53 @@ const getCustomSquareBracketMenuItems = (
 
   return suggestionItems;
 };
-
+type RequiredInitialBlocks = {
+  content: string;
+  type: string;
+};
 export default function MainEditor({
   heading,
   subHeading,
+  initialBlocks,
 }: {
   heading: string;
   subHeading: string;
+  initialBlocks: RequiredInitialBlocks[];
 }) {
   const [blocks, setBlocks] = useState<Block[]>([]);
   const [query, setQuery] = useState('');
   const [text, setText] = useState('');
+
+  log('The data is being retrieved... as the block size is:' + blocks.length);
+
   const [isSquareBracketMenuVisible, setSquareBracketMenuVisible] =
     useState(false);
 
-  const editor = useCreateBlockNote({});
-
   console.log(query, 'The query string to search for');
+
+  useEffect(() => {
+    const saveData = async () => {
+      if (heading && subHeading && blocks.length > 0) {
+        try {
+          const formattedBlocks = blocks.map((block) => JSON.stringify(block));
+          const res = await invoke('save_node', {
+            heading,
+            subheading: subHeading,
+            blocks: formattedBlocks,
+          });
+          console.log('Response from save_node:', res);
+          setText(res as string);
+        } catch (error) {
+          console.error('Error sending data to backend:', error);
+        }
+      }
+    };
+    saveData();
+  }, [heading, subHeading, blocks]);
+
+  const editor = useCreateBlockNote({
+    initialContent: initialBlocks as PartialBlock[],
+  });
 
   useEffect(() => {
     const handleContentChange = () => {
@@ -177,6 +208,7 @@ export default function MainEditor({
       editor.onChange(handleContentChange);
     };
   }, [editor]);
+
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       const lastChar = event.key;
@@ -196,58 +228,6 @@ export default function MainEditor({
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, [editor]);
-
-  useEffect(() => {
-    console.log(
-      JSON.stringify(blocks, null, 2),
-      'The Context sent to backend with keys and data, to analyze and save to database for node named',
-      heading,
-      subHeading
-    );
-
-    const saveData = async () => {
-      if (heading && subHeading && blocks) {
-        try {
-          const formattedBlocks = blocks.map((block) => JSON.stringify(block));
-
-          const res = await invoke('store_nodes', {
-            heading,
-            subheading: subHeading,
-            block: formattedBlocks,
-          });
-
-          setText(res as string);
-        } catch (error) {
-          console.error('Error sending data to backend:', error);
-        }
-      }
-    };
-
-    saveData();
-  }, [heading, subHeading, blocks]);
-
-  useEffect(() => {
-    console.log('The heading and subheading', heading, subHeading);
-    if (heading && subHeading) {
-      const getData = async () => {
-        try {
-          const res = await invoke('get_node', {
-            heading,
-            subheading: subHeading,
-          });
-
-          if (res) {
-            const blocks = JSON.parse(res as string);
-            setBlocks(blocks);
-          }
-        } catch (error) {
-          console.error('Error getting data from backend:', error);
-        }
-      };
-
-      getData();
-    }
-  }, [heading, subHeading]);
   return (
     <div className={'wrapper'}>
       <p className="text-white text-3xl">{text}</p>
@@ -280,6 +260,18 @@ export default function MainEditor({
           )}
         </BlockNoteView>
       </div>
+      {/* <div>Document/Response JSON:</div>
+      <div className="bg-red-400 text-black">
+        <pre>
+          <code>{JSON.stringify(initialBlocks, null, 2)}</code>
+        </pre>
+      </div>
+      <div>Blocks JSON:</div>
+      <div className="bg-red-400 text-black">
+        <pre>
+          <code>{JSON.stringify(blocks, null, 2)}</code>
+        </pre>
+      </div> */}
     </div>
   );
 }
