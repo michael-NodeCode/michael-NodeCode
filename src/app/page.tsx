@@ -11,7 +11,11 @@ import { invoke } from '@tauri-apps/api/core';
 const MainEditor = dynamic(() => import('@sections/maineditor'), {
   ssr: false,
 });
-// Define types
+const NewEditor = dynamic(() => import('@sections/neweditor'), {
+  ssr: false,
+});
+
+// Types
 type BlockContent = {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   styles: Record<string, any>;
@@ -110,16 +114,20 @@ export default function Home() {
       <Sidebar />
       <div className="bg-black min-h-screen w-full flex px-[4.8rem] max-sm:px-0 pb-0 py-[4.8rem] pr-0 text-white">
         <div className="border-2 border-solid border-white w-full p-4 pt-0 rounded-lg text-body">
-          {initialBlocks ? (
+          {initialBlocks.length > 0 ? (
             <MainEditor
               heading={nodeHeading}
               subHeading={nodeSubHeading}
               initialBlocks={initialBlocks}
             />
           ) : (
-            <div className="bg-red-400 text-black h-full">
-              {JSON.stringify(initialBlocks, null, 2)}
-            </div>
+            <React.Fragment>
+              <NewEditor heading={nodeHeading} subHeading={nodeSubHeading} />
+              {/* <div className="bg-black text-black h-full">
+              {JSON.stringify(initialBlocks, null, 2)} <br />
+              Issue with fetching data from backend.. try again later
+            </div> */}
+            </React.Fragment>
           )}
         </div>
       </div>
