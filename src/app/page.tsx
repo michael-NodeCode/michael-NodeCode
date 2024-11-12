@@ -6,6 +6,7 @@ import dynamic from 'next/dynamic';
 import { Footer, Header } from '@components/index';
 import Sidebar from '@components/sidebar';
 import { invoke } from '@tauri-apps/api/core';
+import logging from '@utils/logger';
 
 // BlockNode Editors
 const MainEditor = dynamic(() => import('@sections/maineditor'), {
@@ -52,6 +53,7 @@ export default function Home() {
   );
 
   useEffect(() => {
+    logging.info('Fetching Data from backend '+ nodeHeading + ' ' +  nodeSubHeading);
     const getData = async () => {
       if (nodeHeading && nodeSubHeading) {
         try {
@@ -77,8 +79,8 @@ export default function Home() {
                 const blockType = block.block_type;
                 const textContent = firstContent.text;
 
-                console.log(`block_type: ${blockType}`);
-                console.log(`text: ${textContent}`);
+                logging.info(`block_type: ${blockType}`);
+                logging.info(`text: ${textContent}`);
 
                 requiredInitialBlocks.push({
                   content: textContent,
@@ -95,8 +97,8 @@ export default function Home() {
 
           setInitialBlocks(requiredInitialBlocks);
 
-          console.log(
-            'Initial blocks:',
+          logging.info(
+            'Initial blocks: \n' + 
             JSON.stringify(requiredInitialBlocks, null, 2)
           );
         } catch (error) {
@@ -109,7 +111,7 @@ export default function Home() {
   }, [nodeHeading, nodeSubHeading]);
 
   return (
-    <div className="max-w-[100vw] h-screen overflow-hidden justify-start items-center relative bg-primary">
+    <div className="max-w-[100vw] h-screen overflow-hidden overflow-y-auto justify-start items-center relative bg-black">
       <Header heading={nodeHeading} subHeading={nodeSubHeading} />
       <Sidebar />
       <div className="bg-black min-h-screen w-full flex px-[4.8rem] max-sm:px-0 pb-0 py-[4.8rem] pr-0 text-white">
@@ -123,10 +125,6 @@ export default function Home() {
           ) : (
             <React.Fragment>
               <NewEditor heading={nodeHeading} subHeading={nodeSubHeading} />
-              {/* <div className="bg-black text-black h-full">
-              {JSON.stringify(initialBlocks, null, 2)} <br />
-              Issue with fetching data from backend.. try again later
-            </div> */}
             </React.Fragment>
           )}
         </div>

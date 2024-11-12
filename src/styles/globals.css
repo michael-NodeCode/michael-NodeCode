@@ -22,7 +22,7 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background-color: #153c85;
+  background-color: #000;
   width: 2px;
 }
 
@@ -35,6 +35,7 @@
   display: flex;
   flex-direction: column;
   height: 100%;
+  overflow-y: auto;
 }
 
 .item {

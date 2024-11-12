@@ -1,32 +1,21 @@
-import {
-    writeTextFile,
-    BaseDirectory
-} from "@tauri-apps/plugin-fs";
+type LogLevel = 'info' | 'warn' | 'error';
 
-
-const logFileName = 'frontend-log.txt';
-
-
-async function logToFile(message: unknown) {
-    const timestamp = new Date().toISOString();
-    const logMessage = `[${timestamp}] ${message}\n`;
-
-    try {
-
-        await writeTextFile(logFileName, logMessage, {
-            baseDir: BaseDirectory.AppConfig,
-            append: true
-        });
-    } catch (error) {
-
-        console.error('Error writing to log file:', error);
-    }
+async function logToFile(level: LogLevel, message: string) {
+  try {
+    await fetch('/api/log', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ level, message }),
+    });
+  } catch (error) {
+    console.error('Failed to log message:', error);
+  }
 }
 
+const logging = {
+  info: (msg: string) => logToFile('info', msg),
+  warn: (msg: string) => logToFile('warn', msg),
+  error: (msg: string) => logToFile('error', msg),
+};
 
-function log(message: unknown) {
-    console.log(message);
-    logToFile(message);
-}
-
-export default log;
+export default logging;

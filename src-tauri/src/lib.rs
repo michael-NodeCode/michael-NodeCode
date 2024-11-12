@@ -17,10 +17,7 @@ fn save_node(
     blocks: Vec<JsonValue>,
     db: State<Database>,
 ) -> Result<String, String> {
-    println!(
-        "Saving node with heading: '{}' and subheading: '{}'",
-        heading, subheading
-    );
+    println!("Saving node ...");
 
     let conn = Connection::new(&db).expect("Failed to create connection");
 
@@ -77,74 +74,31 @@ fn save_node(
         }
     }
 
-    // let query = "MATCH (b:blocks) RETURN b.id";
-    // let result = conn.query(query);
-    // let existing_block_ids: Vec<String> = match result {
-    //     Ok(query_result) => query_result
-    //         .into_iter()
-    //         .filter_map(|row| {
-    //             if let Some(id_value) = row.get(0) {
-    //                 if let kuzu::Value::String(id) = id_value {
-    //                     Some(id.clone())
-    //                 } else {
-    //                     None
-    //                 }
-    //             } else {
-    //                 None
-    //             }
-    //         })
-    //         .collect(),
-    //     Err(e) => {
-    //         println!("Error querying block IDs: {}", e);
-    //         return Err(e.to_string());
-    //     }
-    // };
-
-    // println!("existing_block_ids-> {:?}", existing_block_ids);
-    // println!("blocks-> {:?}", blocks);
+    let mut list_new_block_ids: Vec<String> = vec![];
 
     for block in blocks.clone() {
-        print!("current block-> {:?}", block);
-
         let block_value: JsonValue =
             serde_json::from_str(&block.as_str().unwrap()).unwrap_or_default();
-
-        println!("block_value-> {:?}", block_value);
 
         let block_id = block_value["id"].as_str().unwrap_or_default().to_string();
         let content = serde_json::to_string(&block_value["content"]).unwrap_or_default();
         let block_type = block_value["type"].as_str().unwrap_or_default().to_string();
         let styles = serde_json::to_string(&block_value["props"]).unwrap_or_default();
 
-        println!("Block ID: {}", block_id);
-        println!("Block Content: {}", content);
-        println!("Block Type: {}", block_type);
-        println!("Block Styles: {}", styles);
-
-        // if existing_block_ids.contains(&block_id) {
-        //     let update_query = format!(
-        //         "MATCH (b:blocks {{id: '{}'}}) SET b.type = '{}', b.content = '{}', b.styles = '{}'",
-        //         block_id, block_type, content, styles
-        //     );
-        //     match conn.query(&update_query) {
-        //         Ok(_) => println!("Updated block with id '{}'.", block_id),
-        //         Err(e) => {
-        //             println!(
-        //                 "Failed to update block with id '{}'. Error: {}",
-        //                 block_id, e
-        //             );
-        //             return Err(e.to_string());
-        //         }
-        //     }
-        // } else {
-        // }
         let insert_query = format!(
             "MERGE (b:blocks {{id: '{}'}}) ON CREATE SET b.type = '{}', b.content = '{}', b.styles = '{}' 
              ON MATCH SET b.type = '{}', b.content = '{}', b.styles = '{}'",
             block_id, block_type, content, styles, block_type, content, styles
         );
         match conn.query(&insert_query) {
-            Ok(_) => println!("Inserted block with id '{}'.", block_id),
+            Ok(_) => {
+                if block_id.clone() == "" {
+                    println!("Inserted Block ID is empty!");
+                } else {
+                    list_new_block_ids.push(block_id.clone());
+                    println!("Inserted block with id '{}'.", block_id);
+                }
+            }
             Err(e) => {
                 println!(
                     "Failed to insert block with id '{}'. Error: {}",
@@ -171,27 +125,17 @@ fn save_node(
         }
     }
 
-    // for existing_id in existing_block_ids {
-    //     if !blocks.iter().any(|b| b["id"].as_str() == Some(&existing_id)) {
-    //         // Delete block if it's not in the new list
-    //         let delete_block_query = format!(
-    //             "MATCH (b:blocks {{id: '{}'}}) DETACH DELETE b",
-    //             existing_id
-    //         );
-    //         match conn.query(&delete_block_query) {
-    //             Ok(_) => {
-    //                 println!("Deleted block with id '{}'.", existing_id);
-    //             }
-    //             Err(e) => {
-    //                 println!(
-    //                     "Failed to delete block with id '{}'. Error: {}",
-    //                     existing_id, e
-    //                 );
-    //                 return Err(e.to_string());
-    //             }
-    //         }
-    //     }
-    // }
+    let delete_query = format!(
+        "MATCH (s:Subheadings {{id: '{}'}})-[r:HAS_BLOCK]->(b:blocks) WHERE NOT b.id IN {:?} DELETE r, b",
+        subheading_id, list_new_block_ids
+    );
+    match conn.query(&delete_query) {
+        Ok(_) => println!("Deleted duplicate blocks successfully."),
+        Err(e) => {
+            println!("Failed to delete blocks. Error: {}", e);
+            return Err(e.to_string());
+        }
+    }
 
     Ok(format!(
         "Node '{}' with subheading '{}' and blocks saved/updated successfully!",
@@ -201,15 +145,11 @@ fn save_node(
 
 #[tauri::command]
 fn get_node(heading: &str, subheading: &str, db: State<Database>) -> Result<String, String> {
-    println!(
-        "Fetching node for Heading: '{}' and Subheading: '{}'",
-        heading, subheading
-    );
+    println!("Fetching nodes ...");
 
     let conn = Connection::new(&db).expect("Failed to create connection");
 
     let subheading_id = format!("{} {}", heading, subheading);
-    print!("Constructed Subheading ID: '{}'", subheading_id);
 
     let block_query = format!(
         "MATCH (h:Headings)-[:HAS_SUBHEADING]->(s:Subheadings)-[:HAS_BLOCK]->(b:Blocks) 
@@ -224,7 +164,6 @@ fn get_node(heading: &str, subheading: &str, db: State<Database>) -> Result<Stri
             return Err(format!("Query execution failed: {}", err));
         }
     };
-    println!("Query executed successfully");
 
     let mut blocks = vec![];
 
@@ -282,14 +221,6 @@ fn get_node(heading: &str, subheading: &str, db: State<Database>) -> Result<Stri
 
         blocks.push(block);
     }
-
-    println!("Processed blocks: {:?}", blocks);
-
-    print!("Returning response: {:?}", json!({
-        "heading": heading,
-        "subheading": subheading,
-        "blocks": blocks
-    }));
 
     Ok(json!({
         "heading": heading,

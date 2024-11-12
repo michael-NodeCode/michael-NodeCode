@@ -16,7 +16,6 @@ import '@blocknote/mantine/style.css';
 import { useEffect, useState } from 'react';
 import { HiOutlineGlobeAlt } from 'react-icons/hi';
 import { invoke } from '@tauri-apps/api/core';
-import log from '@utils/logger';
 
 const insertHelloWorldItem = (editor: BlockNoteEditor) => ({
   title: 'Insert reference Section below',
@@ -152,8 +151,6 @@ export default function MainEditor({
   const [query, setQuery] = useState('');
   const [text, setText] = useState('');
 
-  log('The data is being retrieved... as the block size is:' + blocks.length);
-
   const [isSquareBracketMenuVisible, setSquareBracketMenuVisible] =
     useState(false);
 
@@ -260,18 +257,6 @@ export default function MainEditor({
           )}
         </BlockNoteView>
       </div>
-      {/* <div>Document/Response JSON:</div>
-      <div className="bg-red-400 text-black">
-        <pre>
-          <code>{JSON.stringify(initialBlocks, null, 2)}</code>
-        </pre>
-      </div>
-      <div>Blocks JSON:</div>
-      <div className="bg-red-400 text-black">
-        <pre>
-          <code>{JSON.stringify(blocks, null, 2)}</code>
-        </pre>
-      </div> */}
     </div>
   );
 }
