@@ -68,13 +68,12 @@ jobs:
           cd kuzu
           make release NUM_THREADS=$(sysctl -n hw.physicalcpu)
           
-          sudo find / -name "libkuzu.dylib" 2>/dev/null
-          
-          if [ -f build/libkuzu.dylib ]; then
+          if [ -f /System/Volumes/Data/Users/runner/work/NodeCodeDesktop/NodeCodeDesktop/kuzu/build/release/src/libkuzu.dylib ]; then
             echo "KuzuDB build successful"
-            sudo cp build/libkuzu.dylib /usr/local/lib/
+            sudo cp /System/Volumes/Data/Users/runner/work/NodeCodeDesktop/NodeCodeDesktop/kuzu/build/release/src/libkuzu.dylib /usr/local/lib/
           else
             echo "KuzuDB build failed"
+            exit 1
           fi
 
       
