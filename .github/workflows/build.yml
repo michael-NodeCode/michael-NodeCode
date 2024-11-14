@@ -52,15 +52,17 @@ jobs:
       - name: setup node
         uses: actions/setup-node@v3
         with:
-          node-version: '18.x' 
+          node-version: '18.x'
       - name: Install build dependencies (macOS)
         if: runner.os == 'macOS'
         run: |
-          brew install cmake
+          brew install cmake ninja
           brew link cmake
-      - name: Install CMake (Windows)
+      - name: Install CMake and Ninja (Windows)
         if: runner.os == 'Windows'
-        run: choco install cmake --installargs 'ADD_CMAKE_TO_PATH=System' -y
+        run: |
+          choco install cmake --installargs 'ADD_CMAKE_TO_PATH=System' -y
+          choco install ninja -y
       - name: Set up Visual Studio (Windows)
         if: runner.os == 'Windows'
         shell: bash
@@ -70,7 +72,7 @@ jobs:
       - name: install Rust stable
         uses: dtolnay/rust-toolchain@stable
       - name: install frontend dependencies
-        run: npm install 
+        run: npm install
       - uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
