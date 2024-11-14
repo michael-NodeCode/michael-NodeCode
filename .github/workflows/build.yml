@@ -73,8 +73,8 @@ jobs:
         run: |
           git clone https://${{ secrets.GH_TOKEN }}@github.com/kuzudb/kuzu.git
           cd kuzu
-          cargo build --release
-          cp target/release/libkuzu.dylib /usr/local/lib
+          make release NUM_THREADS=$(sysctl -n hw.physicalcpu)
+          cp build/release/libkuzu.dylib /usr/local/lib
       - name: Install CMake and Ninja (Windows)
         if: runner.os == 'Windows'
         run: |
