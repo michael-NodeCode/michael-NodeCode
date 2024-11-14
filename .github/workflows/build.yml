@@ -64,7 +64,10 @@ jobs:
         if: runner.os == 'macOS'
         run: |
           brew install boost
-          sed -i '' 's/std::filesystem/boost::filesystem/g' $(find . -name "*.cpp" -or -name "*.h")
+          cp -r src src_backup
+          for f in $(find . -name "*.cpp" -or -name "*.h"); do
+            sed 's/std::filesystem/boost::filesystem/g' $f > $f.tmp && mv $f.tmp $f
+          done
       - name: Install CMake and Ninja (Windows)
         if: runner.os == 'Windows'
         run: |
