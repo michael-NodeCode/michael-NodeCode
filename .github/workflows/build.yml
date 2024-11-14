@@ -74,7 +74,7 @@ jobs:
           git clone https://${{ secrets.GH_TOKEN }}@github.com/kuzudb/kuzu.git
           cd kuzu
           make release NUM_THREADS=$(sysctl -n hw.physicalcpu)
-          cp build/release/libkuzu.dylib /usr/local/lib
+          # sudo cp build/libkuzu.dylib /usr/local/lib/
       - name: Install CMake and Ninja (Windows)
         if: runner.os == 'Windows'
         run: |
@@ -86,10 +86,43 @@ jobs:
         run: |
           rustup default stable
           rustup target add x86_64-pc-windows-msvc
+      - name: Clone and Build KuzuDB on Windows
+        if: runner.os == 'Windows'
+        shell: bash
+        env:
+          NUMBER_OF_PROCESSORS: ${{ env.NUMBER_OF_PROCESSORS }}
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          git clone https://${{ secrets.GH_TOKEN }}@github.com/kuzudb/kuzu.git
+          cd kuzu
+          make release NUM_THREADS=$NUMBER_OF_PROCESSORS
+          # copy build\\kuzu.dll src-tauri\\target\\release\\
+      - name: Find library paths
+        id: find_lib_paths
+        run: |
+          if [[ "$RUNNER_OS" == "macOS" ]]; then
+            LIB_PATH=$(find build -name "libkuzu.dylib" | head -n 1)
+          elif [[ "$RUNNER_OS" == "Windows" ]]; then
+            LIB_PATH=$(find build -name "kuzu.dll" | head -n 1)
+          fi
+          echo "Library path: $LIB_PATH"
+          echo "lib_path=$LIB_PATH" >> $GITHUB_ENV
+      - name: Verify Library Path
+        run: echo "Library path is ${{ env.lib_path }}"
+      - name: Copy library to output directory
+        run: |
+          if [[ "$RUNNER_OS" == "macOS" ]]; then
+            sudo cp ${{ env.lib_path }} /usr/local/lib/
+          elif [[ "$RUNNER_OS" == "Windows" ]]; then
+            # Adjust path as needed for Windows
+            copy ${{ env.lib_path }} src-tauri\\target\\release\\
+          fi
       - name: install Rust stable
         uses: dtolnay/rust-toolchain@stable
       - name: install frontend dependencies
         run: npm install
+      - name: Build Application with Kuzu Support
+        run: cargo build --release --features kuzu-support
       - uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
