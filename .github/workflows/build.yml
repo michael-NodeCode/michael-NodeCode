@@ -6,7 +6,6 @@ on:
       - main
 
 jobs:
-
   create-release:
     permissions:
       contents: write
@@ -19,7 +18,7 @@ jobs:
       - name: setup node
         uses: actions/setup-node@v3
         with:
-          node-version: '18.x' 
+          node-version: '18.x'
       - name: get version
         run: echo "PACKAGE_VERSION=$(node -p "require('./package.json').version")" >> $GITHUB_ENV
       - name: create release
@@ -54,20 +53,21 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: '18.x'
+      - name: Clean Build Directory
+        run: |
+          rm -rf src-tauri/target
       - name: Set macOS deployment target
         if: runner.os == 'macOS'
         run: |
-          brew install cmake ninja
-          brew link cmake
-          export MACOSX_DEPLOYMENT_TARGET=11.0
-      - name: Use Boost.Filesystem (macOS)
+          xcode-select --install
+          brew install cmake python boost ninja
+      - name: Clone and Build KuzuDB on macOS
         if: runner.os == 'macOS'
         run: |
-          brew install boost
-          cp -r src src_backup
-          for f in $(find . -name "*.cpp" -or -name "*.h"); do
-            sed 's/std::filesystem/boost::filesystem/g' $f > $f.tmp && mv $f.tmp $f
-          done
+          git clone https://github.com/kuzudb/kuzudb.git
+          cd kuzudb
+          cargo build --release
+          cp target/release/libkuzu.dylib /usr/local/lib 
       - name: Install CMake and Ninja (Windows)
         if: runner.os == 'Windows'
         run: |
