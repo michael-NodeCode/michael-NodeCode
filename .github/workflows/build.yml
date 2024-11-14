@@ -68,11 +68,13 @@ jobs:
           brew install cmake python boost ninja
       - name: Clone and Build KuzuDB on macOS
         if: runner.os == 'macOS'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
-          git clone https://github.com/kuzudb/kuzudb.git
+          git clone https://${{ secrets.GH_TOKEN }}@github.com/kuzudb/kuzudb.git
           cd kuzudb
           cargo build --release
-          cp target/release/libkuzu.dylib /usr/local/lib 
+          cp target/release/libkuzu.dylib /usr/local/lib
       - name: Install CMake and Ninja (Windows)
         if: runner.os == 'Windows'
         run: |
