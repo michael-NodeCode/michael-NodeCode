@@ -72,7 +72,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
           git clone https://${{ secrets.GH_TOKEN }}@github.com/kuzudb/kuzu.git
-          cd kuzudb
+          cd kuzu
           cargo build --release
           cp target/release/libkuzu.dylib /usr/local/lib
       - name: Install CMake and Ninja (Windows)
