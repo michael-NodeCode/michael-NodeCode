@@ -71,7 +71,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
-          git clone https://${{ secrets.GH_TOKEN }}@github.com/kuzudb/kuzudb.git
+          git clone https://${{ secrets.GH_TOKEN }}@github.com/kuzudb/kuzu.git
           cd kuzudb
           cargo build --release
           cp target/release/libkuzu.dylib /usr/local/lib
