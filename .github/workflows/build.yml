@@ -53,6 +53,10 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: '18.x'
+      - name: Apply macOS Compatibility Patch for Kuzu
+        run: |
+          echo "Applying macOS compatibility patch for Kuzu"
+          patch -p1 < ./.github/workflows/kuzu_macos_compatibility.patch
       - name: Set macOS deployment target
         if: runner.os == 'macOS'
         run: |
