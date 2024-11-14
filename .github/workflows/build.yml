@@ -54,12 +54,17 @@ jobs:
         with:
           node-version: '18.x'
       - name: Clean Build Directory
+        if: runner.os == 'macOS'
         run: |
           rm -rf src-tauri/target
       - name: Set macOS deployment target
         if: runner.os == 'macOS'
         run: |
-          xcode-select --install
+          if ! xcode-select -p; then
+            xcode-select --install
+          else
+            echo "Xcode Command Line Tools are already installed"
+          fi
           brew install cmake python boost ninja
       - name: Clone and Build KuzuDB on macOS
         if: runner.os == 'macOS'
