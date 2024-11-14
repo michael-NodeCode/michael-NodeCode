@@ -6,6 +6,7 @@ on:
       - main
 
 jobs:
+
   create-release:
     permissions:
       contents: write
@@ -53,19 +54,12 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: '18.x'
-      - name: Apply macOS Compatibility Patch for Kuzu
-        run: |
-          echo "Applying macOS compatibility patch for Kuzu"
-          patch -p1 < ./kuzu_macos_compatibility.patch
       - name: Set macOS deployment target
-        if: runner.os == 'macOS'
-        run: |
-          echo "MACOSX_DEPLOYMENT_TARGET=10.15" >> $GITHUB_ENV
-      - name: Install build dependencies (macOS)
         if: runner.os == 'macOS'
         run: |
           brew install cmake ninja
           brew link cmake
+          export MACOSX_DEPLOYMENT_TARGET=10.15
       - name: Install CMake and Ninja (Windows)
         if: runner.os == 'Windows'
         run: |
