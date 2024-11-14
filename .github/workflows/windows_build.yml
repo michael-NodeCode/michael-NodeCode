@@ -59,6 +59,7 @@ jobs:
         run: |
           choco install cmake --installargs 'ADD_CMAKE_TO_PATH=System' -y
           choco install ninja -y
+          
       - name: Set up Visual Studio (Windows)
         if: runner.os == 'Windows'
         shell: powershell
@@ -66,10 +67,28 @@ jobs:
           rustup default stable
           rustup target add x86_64-pc-windows-msvc
 
-      - name: Install Rust and Build Application with Kuzu
-        uses: dtolnay/rust-toolchain@stable
+      - name: Cache Cargo build target
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: cargo-${{ runner.os }}-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            cargo-${{ runner.os }}-
+            cargo-
+
       - name: Install frontend dependencies
         run: npm install
+
+      - name: Cache npm dependencies
+        uses: actions/cache@v3
+        with:
+          path: node_modules
+          key: npm-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            npm-
 
       - uses: tauri-apps/tauri-action@v0
         env:

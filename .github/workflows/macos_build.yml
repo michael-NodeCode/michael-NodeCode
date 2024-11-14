@@ -53,35 +53,66 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: '18.x'
-          
+      
+      - name: Cache Node.js dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-modules-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-modules-
+
       - name: Clean Build Directory
         if: runner.os == 'macOS'
         run: rm -rf src-tauri/target
+
+      - name: Cache Cargo dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo
+            ~/.rustup
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
       - name: Set up macOS dependencies for Kuzu
         if: runner.os == 'macOS'
         run: |
           brew install cmake python
+
+      - name: Cache Kuzu build artifacts
+        uses: actions/cache@v3
+        with:
+          path: /System/Volumes/Data/Users/runner/work/NodeCodeDesktop/NodeCodeDesktop/kuzu/build/release/src/libkuzu.dylib
+          key: ${{ runner.os }}-kuzu-${{ hashFiles('**/kuzu/*') }}
+          restore-keys: |
+            ${{ runner.os }}-kuzu-
+
       - name: Clone and Build KuzuDB on macOS
         if: runner.os == 'macOS'
         run: |
-          git clone https://${{ secrets.GH_TOKEN }}@github.com/kuzudb/kuzu.git
-          cd kuzu
-          make release NUM_THREADS=$(sysctl -n hw.physicalcpu)
-          
-          if [ -f /System/Volumes/Data/Users/runner/work/NodeCodeDesktop/NodeCodeDesktop/kuzu/build/release/src/libkuzu.dylib ]; then
-            echo "KuzuDB build successful"
-            sudo cp /System/Volumes/Data/Users/runner/work/NodeCodeDesktop/NodeCodeDesktop/kuzu/build/release/src/libkuzu.dylib /usr/local/lib/
+          if [ ! -f /System/Volumes/Data/Users/runner/work/NodeCodeDesktop/NodeCodeDesktop/kuzu/build/release/src/libkuzu.dylib ]; then
+            echo "KuzuDB not found, building..."
+            git clone https://${{ secrets.GH_TOKEN }}@github.com/kuzudb/kuzu.git
+            cd kuzu
+            make release NUM_THREADS=$(sysctl -n hw.physicalcpu)
           else
-            echo "KuzuDB build failed"
-            exit 1
+            echo "Using cached KuzuDB build"
           fi
 
-      
+      - name: Copy KuzuDB .dylib to src-tauri folder
+        if: runner.os == 'macOS'
+        run: |
+          mkdir -p src-tauri/kuzu
+          cp /System/Volumes/Data/Users/runner/work/NodeCodeDesktop/NodeCodeDesktop/kuzu/build/release/src/libkuzu.dylib src-tauri/kuzu/libkuzu.dylib
+
       - name: Clean Cargo.toml
         if: runner.os == 'macOS'
         run: |
-         rm -rf src-tauri/Cargo.toml
-         rm -rf src-tauri/Cargo.lock
+          rm -rf src-tauri/Cargo.toml
+          rm -rf src-tauri/Cargo.lock
+          rm -rf src-tauri/build.rs
 
       - name: Create new Cargo.toml
         if: runner.os == 'macOS'
@@ -111,16 +142,34 @@ jobs:
           tauri = { version = \"2.0.6\", features = [] }
           tauri-plugin-log = \"2.0.0-rc\"
           tokio = { version = \"1\", features = [\"full\", \"macros\", \"rt-multi-thread\"] }
-          kuzu = { version = \"0.6.1\", path = \"/usr/local/lib\" }
+          kuzu = { version = \"0.6.1\", path = \"src-tauri/kuzu/libkuzu.dylib\" }
           lazy_static = \"1.5.0\"
           tauri-plugin-shell = \"2.0.0\"
           " >> src-tauri/Cargo.toml
 
-          cat src-tauri/Cargo.toml
-          
+          echo "
+          use std::env;
+          use std::path::Path;
+
+          fn main() {
+              let kuzu_lib_path = Path::new(\"src-tauri/kuzu/libkuzu.dylib\");
+
+              if kuzu_lib_path.exists() {
+                  println!(\"cargo:rerun-if-changed={}\", kuzu_lib_path.display());
+                  println!(\"cargo:rustc-link-lib=dylib=kuzu\");
+                  println!(
+                      \"cargo:rustc-link-search=native={}\",
+                      kuzu_lib_path.parent().unwrap().display()
+                  );
+              } else {
+                  panic!(\"KuzuDB library not found at {:?}\", kuzu_lib_path);
+              }
+          }
+          " >> src-tauri/build.rs
 
       - name: Install Rust and Build Application with Kuzu
         uses: dtolnay/rust-toolchain@stable
+
       - name: Install frontend dependencies
         run: npm install
 
@@ -149,6 +198,5 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               release_id: process.env.release_id,
-              draft: false,
-              prerelease: false
+              draft: false
             })
