@@ -1,4 +1,4 @@
-name: 'Build and Distribute Multi-Platform Binaries'
+name: 'Windows Build and Distribute'
 
 on:
   push:

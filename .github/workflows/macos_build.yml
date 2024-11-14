@@ -1,4 +1,4 @@
-name: 'Build and Distribute Multi-Platform Binaries'
+name: 'Macos Build and Distribute'
 
 on:
   push:
