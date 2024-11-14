@@ -59,7 +59,11 @@ jobs:
         run: |
           brew install cmake ninja
           brew link cmake
-          export MACOSX_DEPLOYMENT_TARGET=10.15
+          export MACOSX_DEPLOYMENT_TARGET=11.0
+      - name: Install Boost (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          brew install boost
       - name: Install CMake and Ninja (Windows)
         if: runner.os == 'Windows'
         run: |
