@@ -134,18 +134,13 @@ const getCustomSquareBracketMenuItems = (
 
   return suggestionItems;
 };
-type RequiredInitialBlocks = {
-  content: string;
-  type: string;
-};
-export default function MainEditor({
+
+export default function NewEditor({
   heading,
   subHeading,
-  initialBlocks,
 }: {
   heading: string;
   subHeading: string;
-  initialBlocks: RequiredInitialBlocks[];
 }) {
   const [blocks, setBlocks] = useState<Block[]>([]);
   const [query, setQuery] = useState('');
@@ -176,9 +171,7 @@ export default function MainEditor({
     saveData();
   }, [heading, subHeading, blocks]);
 
-  const editor = useCreateBlockNote({
-    initialContent: initialBlocks as PartialBlock[],
-  });
+  const editor = useCreateBlockNote({});
 
   useEffect(() => {
     const handleContentChange = () => {
@@ -257,6 +250,18 @@ export default function MainEditor({
           )}
         </BlockNoteView>
       </div>
+      {/* <div>Document/Response JSON:</div>
+      <div className="bg-red-400 text-black">
+        <pre>
+          <code>{JSON.stringify(initialBlocks, null, 2)}</code>
+        </pre>
+      </div>
+      <div>Blocks JSON:</div>
+      <div className="bg-red-400 text-black">
+        <pre>
+          <code>{JSON.stringify(blocks, null, 2)}</code>
+        </pre>
+      </div> */}
     </div>
   );
 }

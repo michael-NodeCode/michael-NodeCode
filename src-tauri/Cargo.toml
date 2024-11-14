@@ -1,6 +1,6 @@
 [package]
 name = "nodecode"
-version = "1.0.0"
+version = "1.1.0"
 description = "nodecode"
 authors = ["mstomar"]
 license = ""
@@ -24,4 +24,9 @@ log = "0.4"
 tauri = { version = "2.0.6", features = [] }
 tauri-plugin-log = "2.0.0-rc"
 tokio = { version = "1", features = ["full", "macros", "rt-multi-thread"] }
-# surrealdb = { version = "2.0", features = ["kv-rocksdb", "kv-mem", "kv-fdb-7_1", "kv-tikv"] }
+kuzu = "0.6.1"
+lazy_static = "1.5.0"
+tauri-plugin-shell = "2.0.0"
+
+# [build]
+# rustflags = ["-C", "link-arg=-std=c++14"]
