@@ -19,7 +19,7 @@ jobs:
       - name: setup node
         uses: actions/setup-node@v3
         with:
-          node-version: '18.x' 
+          node-version: '18.x'
       - name: get version
         run: echo "PACKAGE_VERSION=$(node -p "require('./package.json').version")" >> $GITHUB_ENV
       - name: create release
@@ -38,39 +38,23 @@ jobs:
             })
             return data.id
 
-  build-tauri:
+  build-tauri-windows:
     needs: create-release
     permissions:
       contents: write
-    strategy:
-      fail-fast: false
-      matrix:
-        platform: [macos-latest, windows-latest]
-
-    runs-on: ${{ matrix.platform }}
+    runs-on: windows-latest
+    
     steps:
       - uses: actions/checkout@v3
       - name: setup node
         uses: actions/setup-node@v3
         with:
           node-version: '18.x'
-      - name: Set macOS deployment target
-        if: runner.os == 'macOS'
-        run: |
-          brew install cmake ninja
-          brew link cmake
-          export MACOSX_DEPLOYMENT_TARGET=11.0
-      - name: Install Boost (macOS)
-        if: runner.os == 'macOS'
-        run: |
-          brew install boost
       - name: Install CMake and Ninja (Windows)
-        if: runner.os == 'Windows'
         run: |
           choco install cmake --installargs 'ADD_CMAKE_TO_PATH=System' -y
           choco install ninja -y
       - name: Set up Visual Studio (Windows)
-        if: runner.os == 'Windows'
         shell: bash
         run: |
           rustup default stable
@@ -86,11 +70,44 @@ jobs:
         with:
           releaseId: ${{ needs.create-release.outputs.release_id }}
 
+  build-tauri-macos:
+    needs: create-release
+    permissions:
+      contents: write
+    runs-on: macos-11
+    
+    steps:
+      - uses: actions/checkout@v3
+      - name: setup node
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18.x'
+      - name: Set macOS deployment target
+        run: |
+          brew install cmake ninja
+          brew link cmake
+          export MACOSX_DEPLOYMENT_TARGET=11.0
+      - name: Use Boost.Filesystem (macOS)
+        run: |
+          brew install boost
+          sed -i '' 's/std::filesystem/boost::filesystem/g' $(find . -name "*.cpp" -or -name "*.h")
+      - name: install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+      - name: install frontend dependencies
+        run: npm install
+      - uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+          CMAKE_BUILD_TYPE: Release
+        with:
+          releaseId: ${{ needs.create-release.outputs.release_id }}
+
   publish-release:
     permissions:
       contents: write
     runs-on: ubuntu-20.04
-    needs: [create-release, build-tauri]
+    needs: [create-release, build-tauri-windows, build-tauri-macos]
+    if: success() 
 
     steps:
       - name: publish release
@@ -107,3 +124,112 @@ jobs:
               draft: false,
               prerelease: false
             })
+# name: 'Build and Distribute Multi-Platform Binaries'
+
+# on:
+#   push:
+#     branches:
+#       - main
+
+# jobs:
+
+#   create-release:
+#     permissions:
+#       contents: write
+#     runs-on: ubuntu-20.04
+#     outputs:
+#       release_id: ${{ steps.create-release.outputs.result }}
+
+#     steps:
+#       - uses: actions/checkout@v3
+#       - name: setup node
+#         uses: actions/setup-node@v3
+#         with:
+#           node-version: '18.x' 
+#       - name: get version
+#         run: echo "PACKAGE_VERSION=$(node -p "require('./package.json').version")" >> $GITHUB_ENV
+#       - name: create release
+#         id: create-release
+#         uses: actions/github-script@v6
+#         with:
+#           script: |
+#             const { data } = await github.rest.repos.createRelease({
+#               owner: context.repo.owner,
+#               repo: context.repo.repo,
+#               tag_name: `app-v${process.env.PACKAGE_VERSION}`,
+#               name: `Desktop App v${process.env.PACKAGE_VERSION}`,
+#               body: 'Take a look at the assets to download and install this app.',
+#               draft: true,
+#               prerelease: false
+#             })
+#             return data.id
+
+#   build-tauri:
+#     needs: create-release
+#     permissions:
+#       contents: write
+#     strategy:
+#       fail-fast: false
+#       matrix:
+#         platform: [macos-latest, windows-latest]
+
+#     runs-on: ${{ matrix.platform }}
+#     steps:
+#       - uses: actions/checkout@v3
+#       - name: setup node
+#         uses: actions/setup-node@v3
+#         with:
+#           node-version: '18.x'
+#       - name: Set macOS deployment target
+#         if: runner.os == 'macOS'
+#         run: |
+#           brew install cmake ninja
+#           brew link cmake
+#           export MACOSX_DEPLOYMENT_TARGET=11.0
+#       - name: Install Boost (macOS)
+#         if: runner.os == 'macOS'
+#         run: |
+#           brew install boost
+#       - name: Install CMake and Ninja (Windows)
+#         if: runner.os == 'Windows'
+#         run: |
+#           choco install cmake --installargs 'ADD_CMAKE_TO_PATH=System' -y
+#           choco install ninja -y
+#       - name: Set up Visual Studio (Windows)
+#         if: runner.os == 'Windows'
+#         shell: bash
+#         run: |
+#           rustup default stable
+#           rustup target add x86_64-pc-windows-msvc
+#       - name: install Rust stable
+#         uses: dtolnay/rust-toolchain@stable
+#       - name: install frontend dependencies
+#         run: npm install
+#       - uses: tauri-apps/tauri-action@v0
+#         env:
+#           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+#           CMAKE_BUILD_TYPE: Release
+#         with:
+#           releaseId: ${{ needs.create-release.outputs.release_id }}
+
+#   publish-release:
+#     permissions:
+#       contents: write
+#     runs-on: ubuntu-20.04
+#     needs: [create-release, build-tauri]
+
+#     steps:
+#       - name: publish release
+#         id: publish-release
+#         uses: actions/github-script@v6
+#         env:
+#           release_id: ${{ needs.create-release.outputs.release_id }}
+#         with:
+#           script: |
+#             github.rest.repos.updateRelease({
+#               owner: context.repo.owner,
+#               repo: context.repo.repo,
+#               release_id: process.env.release_id,
+#               draft: false,
+#               prerelease: false
+#             })
