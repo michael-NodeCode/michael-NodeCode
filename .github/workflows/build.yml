@@ -38,37 +38,37 @@ jobs:
             })
             return data.id
 
-  build-tauri-windows:
-    needs: create-release
-    permissions:
-      contents: write
-    runs-on: windows-latest
+  # build-tauri-windows:
+  #   needs: create-release
+  #   permissions:
+  #     contents: write
+  #   runs-on: windows-latest
     
-    steps:
-      - uses: actions/checkout@v3
-      - name: setup node
-        uses: actions/setup-node@v3
-        with:
-          node-version: '18.x'
-      - name: Install CMake and Ninja (Windows)
-        run: |
-          choco install cmake --installargs 'ADD_CMAKE_TO_PATH=System' -y
-          choco install ninja -y
-      - name: Set up Visual Studio (Windows)
-        shell: bash
-        run: |
-          rustup default stable
-          rustup target add x86_64-pc-windows-msvc
-      - name: install Rust stable
-        uses: dtolnay/rust-toolchain@stable
-      - name: install frontend dependencies
-        run: npm install
-      - uses: tauri-apps/tauri-action@v0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
-          CMAKE_BUILD_TYPE: Release
-        with:
-          releaseId: ${{ needs.create-release.outputs.release_id }}
+  #   steps:
+  #     - uses: actions/checkout@v3
+  #     - name: setup node
+  #       uses: actions/setup-node@v3
+  #       with:
+  #         node-version: '18.x'
+  #     - name: Install CMake and Ninja (Windows)
+  #       run: |
+  #         choco install cmake --installargs 'ADD_CMAKE_TO_PATH=System' -y
+  #         choco install ninja -y
+  #     - name: Set up Visual Studio (Windows)
+  #       shell: bash
+  #       run: |
+  #         rustup default stable
+  #         rustup target add x86_64-pc-windows-msvc
+  #     - name: install Rust stable
+  #       uses: dtolnay/rust-toolchain@stable
+  #     - name: install frontend dependencies
+  #       run: npm install
+  #     - uses: tauri-apps/tauri-action@v0
+  #       env:
+  #         GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+  #         CMAKE_BUILD_TYPE: Release
+  #       with:
+  #         releaseId: ${{ needs.create-release.outputs.release_id }}
 
   build-tauri-macos:
     needs: create-release
@@ -106,7 +106,7 @@ jobs:
     permissions:
       contents: write
     runs-on: ubuntu-20.04
-    needs: [create-release, build-tauri-windows, build-tauri-macos]
+    needs: [create-release, build-tauri-macos] # build-tauri-windows
     if: success() 
 
     steps:
