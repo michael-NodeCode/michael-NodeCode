@@ -144,6 +144,7 @@ export default function NewEditor({
 }) {
   const [blocks, setBlocks] = useState<Block[]>([]);
   const [query, setQuery] = useState('');
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [text, setText] = useState('');
 
   const [isSquareBracketMenuVisible, setSquareBracketMenuVisible] =
@@ -220,7 +221,7 @@ export default function NewEditor({
   }, [editor]);
   return (
     <div className={'wrapper'}>
-      <p className="text-white text-3xl">{text}</p>
+      <p className="text-white text-3xl">{'saved'}</p>
       <div className={'item'}>
         <BlockNoteView
           editor={editor}

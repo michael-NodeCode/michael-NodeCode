@@ -54,12 +54,6 @@ jobs:
         with:
           node-version: '18.x'
 
-      - name: Install CMake and Ninja (Windows)
-        if: runner.os == 'Windows'
-        run: |
-          choco install cmake --installargs 'ADD_CMAKE_TO_PATH=System' -y
-          choco install ninja -y
-          
       - name: Set up Visual Studio (Windows)
         if: runner.os == 'Windows'
         shell: powershell

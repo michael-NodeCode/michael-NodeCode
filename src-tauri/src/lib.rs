@@ -1,13 +1,11 @@
-mod models;
-
-use kuzu::{Connection, Database};
-// use models::node::{Block, Node};
+use rusqlite::Connection;
 use serde_json::{json, Value as JsonValue};
-use tauri::{Manager, State};
+use std::sync::{Arc, Mutex};
+use tauri::Manager;
 
 #[tauri::command]
 fn greet() -> String {
-    format!("Hello, Backend Is Up along with DB")
+    "Hello, Backend Is Up along with DB".to_string()
 }
 
 #[tauri::command]
@@ -15,67 +13,58 @@ fn save_node(
     heading: &str,
     subheading: &str,
     blocks: Vec<JsonValue>,
-    db: State<Database>,
+    db: tauri::State<Arc<Mutex<rusqlite::Connection>>>,
 ) -> Result<String, String> {
     println!("Saving node ...");
 
-    let conn = Connection::new(&db).expect("Failed to create connection");
+    let mut conn = db.lock().map_err(|e| e.to_string())?;
 
-    let heading_query = format!(
-        "MERGE (n:Headings {{id: '{}'}}) SET n.name = '{}'",
-        heading, heading
-    );
+    let tx = conn.transaction().map_err(|e| {
+        println!("Failed to start transaction: {}", e);
+        e.to_string()
+    })?;
 
-    match conn.query(&heading_query) {
-        Ok(_) => println!("'Heading Node' with name '{}' saved successfully.", heading),
-        Err(err) => {
-            eprintln!(
-                "Failed to store 'Heading Node' with name '{}'. Error: {:?}",
-                heading, err
-            );
-            return Err(err.to_string());
-        }
+    if let Err(e) = tx.execute(
+        "INSERT INTO headings (id, name) VALUES (?1, ?2)
+        ON CONFLICT(id) DO UPDATE SET name = excluded.name",
+        &[heading, heading],
+    ) {
+        println!("Error saving heading '{}': {}", heading, e);
+        return Err(format!("Failed to save heading: {}", e));
+    } else {
+        println!("Heading '{}' saved successfully.", heading);
     }
 
     let subheading_id = format!("{} {}", heading, subheading);
-
-    let subheading_query = format!(
-        "MERGE (n:Subheadings {{id: '{}'}}) SET n.name = '{}'",
-        subheading_id, subheading
-    );
-
-    match conn.query(&subheading_query) {
-        Ok(_) => println!(
-            "'Sub Heading Node' with subheading '{}' stored successfully.",
-            subheading
-        ),
-        Err(e) => {
-            println!(
-                "Failed to store 'Sub Heading Node' with subheading '{}'. Error: {}",
-                subheading, e
-            );
-            return Err(e.to_string());
-        }
+    if let Err(e) = tx.execute(
+        "INSERT INTO subheadings (id, name) VALUES (?1, ?2)
+        ON CONFLICT(id) DO UPDATE SET name = excluded.name",
+        &[&subheading_id, subheading],
+    ) {
+        println!("Error saving subheading '{}': {}", subheading, e);
+        return Err(format!("Failed to save subheading: {}", e));
+    } else {
+        println!("Subheading '{}' saved successfully.", subheading);
     }
 
-    let heading_to_subheading = format!(
-        "MERGE (h:Headings {{id: '{}'}}) MERGE (s:Subheadings {{id: '{}'}}) MERGE (h)-[:HAS_SUBHEADING]->(s)",
-        heading, subheading_id
-    );
-
-    match conn.query(&heading_to_subheading) {
-        Ok(_) => println!("Created relationship 'Heading -> Subheading' successfully."),
-        Err(e) => {
-            println!(
-                "Failed to create relationship 'Heading -> Subheading'. Error: {}",
-                e
-            );
-            return Err(e.to_string());
-        }
+    if let Err(e) = tx.execute(
+        "INSERT INTO has_subheading (heading_id, subheading_id) VALUES (?1, ?2)
+        ON CONFLICT(heading_id, subheading_id) DO NOTHING",
+        &[heading, &subheading_id],
+    ) {
+        println!(
+            "Error linking heading '{}' to subheading '{}': {}",
+            heading, subheading, e
+        );
+        return Err(format!("Failed to link heading to subheading: {}", e));
+    } else {
+        println!(
+            "Linked heading '{}' to subheading '{}'.",
+            heading, subheading
+        );
     }
 
-    let mut list_new_block_ids: Vec<String> = vec![];
-
+    let mut new_block_ids = vec![];
     for block in blocks.clone() {
         let block_value: JsonValue =
             serde_json::from_str(&block.as_str().unwrap()).unwrap_or_default();
@@ -85,152 +74,159 @@ fn save_node(
         let block_type = block_value["type"].as_str().unwrap_or_default().to_string();
         let styles = serde_json::to_string(&block_value["props"]).unwrap_or_default();
 
-        let insert_query = format!(
-            "MERGE (b:blocks {{id: '{}'}}) ON CREATE SET b.type = '{}', b.content = '{}', b.styles = '{}' 
-             ON MATCH SET b.type = '{}', b.content = '{}', b.styles = '{}'",
-            block_id, block_type, content, styles, block_type, content, styles
-        );
-        match conn.query(&insert_query) {
-            Ok(_) => {
-                if block_id.clone() == "" {
-                    println!("Inserted Block ID is empty!");
-                } else {
-                    list_new_block_ids.push(block_id.clone());
-                    println!("Inserted block with id '{}'.", block_id);
-                }
-            }
-            Err(e) => {
-                println!(
-                    "Failed to insert block with id '{}'. Error: {}",
-                    block_id, e
-                );
-                return Err(e.to_string());
-            }
+        if let Err(e) = tx.execute(
+            "INSERT INTO blocks (id, type, content, styles) VALUES (?1, ?2, ?3, ?4)
+            ON CONFLICT(id) DO UPDATE SET type = excluded.type, content = excluded.content, styles = excluded.styles",
+            [block_id.clone(), block_type, content, styles],
+        ) {
+            println!("Error saving block '{}': {}", block_id, e);
+            return Err(format!("Failed to save block: {}", e));
+        } else {
+            println!("Block '{}' saved successfully.", block_id);
         }
 
-        let subheading_to_block = format!(
-            "MATCH (s:Subheadings {{id: '{}'}}), (b:blocks {{id: '{}'}}) \
-             MERGE (s)-[r:HAS_BLOCK]->(b)",
-            subheading_id, block_id
-        );
-        match conn.query(&subheading_to_block) {
-            Ok(_) => println!("Created relationship 'Subheading -> Block' successfully."),
-            Err(e) => {
-                println!(
-                    "Failed to create relationship 'Subheading -> Block'. Error: {}",
-                    e
-                );
-                return Err(e.to_string());
-            }
+        new_block_ids.push(block_id.to_string());
+
+        if let Err(e) = tx.execute(
+            "INSERT INTO has_block (subheading_id, block_id) VALUES (?1, ?2)
+            ON CONFLICT(subheading_id, block_id) DO NOTHING",
+            [&subheading_id, &block_id],
+        ) {
+            println!(
+                "Error linking subheading '{}' to block '{}': {}",
+                subheading_id, block_id, e
+            );
+            return Err(format!("Failed to link subheading to block: {}", e));
+        } else {
+            println!(
+                "Linked subheading '{}' to block '{}'.",
+                subheading_id, block_id
+            );
         }
     }
 
-    let delete_query = format!(
-        "MATCH (s:Subheadings {{id: '{}'}})-[r:HAS_BLOCK]->(b:blocks) WHERE NOT b.id IN {:?} DELETE r, b",
-        subheading_id, list_new_block_ids
+    let delete_orphans_query = format!(
+        "DELETE FROM has_block WHERE block_id IN (
+            SELECT b.id FROM Blocks b
+            LEFT JOIN has_block sb ON b.id = sb.block_id
+            WHERE sb.block_id IS NULL AND b.id NOT IN ({})
+        )",
+        new_block_ids
+            .iter()
+            .map(|id| format!("'{}'", id))
+            .collect::<Vec<_>>()
+            .join(", ")
     );
-    match conn.query(&delete_query) {
-        Ok(_) => println!("Deleted duplicate blocks successfully."),
-        Err(e) => {
-            println!("Failed to delete blocks. Error: {}", e);
-            return Err(e.to_string());
-        }
+
+    tx.execute(&delete_orphans_query, [])
+        .map_err(|e| format!("Failed to delete orphaned block references: {}", e))?;
+    let delete_blocks_query = format!(
+        "DELETE FROM Blocks WHERE id IN (
+            SELECT b.id FROM Blocks b
+            LEFT JOIN has_block sb ON b.id = sb.block_id
+            WHERE sb.block_id IS NULL AND b.id NOT IN ({})
+        )",
+        new_block_ids
+            .iter()
+            .map(|id| format!("'{}'", id))
+            .collect::<Vec<_>>()
+            .join(", ")
+    );
+
+    tx.execute(&delete_blocks_query, [])
+        .map_err(|e| format!("Failed to delete orphaned blocks: {}", e))?;
+    if let Err(e) = tx.execute(&delete_blocks_query, []) {
+        println!("Error deleting orphaned blocks: {}", e);
+        return Err(format!("Failed to delete orphaned blocks: {}", e));
+    } else {
+        println!("Orphaned blocks deleted successfully.");
     }
+
+    if let Err(e) = tx.commit() {
+        println!("Error committing transaction: {}", e);
+        return Err(format!("Failed to commit transaction: {}", e));
+    }
+
+    println!(
+        "Node '{}' saved successfully with subheading '{}'.",
+        heading, subheading
+    );
 
     Ok(format!(
-        "Node '{}' with subheading '{}' and blocks saved/updated successfully!",
+        "Node '{}' with subheading '{}' and blocks saved successfully!",
         heading, subheading
     ))
 }
 
 #[tauri::command]
-fn get_node(heading: &str, subheading: &str, db: State<Database>) -> Result<String, String> {
+fn get_node(
+    heading: &str,
+    subheading: &str,
+    db: tauri::State<Arc<Mutex<rusqlite::Connection>>>,
+) -> Result<String, String> {
     println!("Fetching nodes ...");
 
-    let conn = Connection::new(&db).expect("Failed to create connection");
+    let conn = db
+        .lock()
+        .map_err(|e| format!("Failed to acquire database lock: {}", e))?;
 
     let subheading_id = format!("{} {}", heading, subheading);
 
-    let block_query = format!(
-        "MATCH (h:Headings)-[:HAS_SUBHEADING]->(s:Subheadings)-[:HAS_BLOCK]->(b:Blocks) 
-         WHERE s.id = '{}' 
-         RETURN b.id AS block_id, b.type AS block_type, b.content AS block_content, b.styles AS block_styles",
-        subheading_id
-    );
-    let result = match conn.query(&block_query) {
-        Ok(res) => res,
-        Err(err) => {
-            println!("Error executing query: {}", err);
-            return Err(format!("Query execution failed: {}", err));
-        }
-    };
+    let mut stmt = conn
+        .prepare(
+            "SELECT b.id, b.type, b.content, b.styles
+            FROM headings h
+            JOIN has_subheading hs ON h.id = hs.heading_id
+            JOIN subheadings s ON hs.subheading_id = s.id
+            JOIN has_block sb ON s.id = sb.subheading_id
+            JOIN blocks b ON sb.block_id = b.id
+            WHERE s.id = ?1",
+        )
+        .map_err(|e| format!("Failed to prepare query: {}", e))?;
 
-    let mut blocks = vec![];
+    let blocks = stmt
+        .query_map([&subheading_id], |row| {
+            Ok(json!({
+                "block_id": row.get::<_, String>(0)?,
+                "block_type": row.get::<_, String>(1)?,
+                "block_content": row.get::<_, String>(2)?,
+                "block_styles": row.get::<_, String>(3)?
+            }))
+        })
+        .map_err(|e| format!("Failed to fetch blocks: {}", e))?
+        .filter_map(Result::ok)
+        .collect::<Vec<_>>();
 
-    for row in result.into_iter() {
-        let block_id = row
-            .get(0)
-            .and_then(|value| {
-                if let kuzu::Value::String(id) = value {
-                    Some(id.clone())
-                } else {
-                    None
-                }
-            })
-            .unwrap_or_default();
-
-        let block_type = row
-            .get(1)
-            .and_then(|value| {
-                if let kuzu::Value::String(block_type) = value {
-                    Some(block_type.clone())
-                } else {
-                    None
-                }
-            })
-            .unwrap_or_default();
-
-        let block_content = row
-            .get(2)
-            .and_then(|value| {
-                if let kuzu::Value::String(content) = value {
-                    Some(content.clone())
-                } else {
-                    None
-                }
-            })
-            .unwrap_or_default();
-
-        let block_styles = row
-            .get(3)
-            .and_then(|value| {
-                if let kuzu::Value::String(styles) = value {
-                    Some(styles.clone())
-                } else {
-                    None
-                }
-            })
-            .unwrap_or_default();
-
-        let block = json!({
-            "block_id": block_id,
-            "block_type": block_type,
-            "block_content": block_content,
-            "block_styles": block_styles
-        });
-
-        blocks.push(block);
+    if blocks.is_empty() {
+        println!(
+            "No blocks found for heading '{}' and subheading '{}'.",
+            heading, subheading
+        );
+        return Ok(json!({
+            "heading": heading,
+            "subheading": subheading,
+            "blocks": []
+        })
+        .to_string());
     }
 
-    Ok(json!({
+    let response = json!({
         "heading": heading,
         "subheading": subheading,
         "blocks": blocks
-    })
-    .to_string())
+    });
+
+    println!(
+        "Successfully fetched {} blocks for heading '{}' and subheading '{}'.",
+        blocks.len(),
+        heading,
+        subheading
+    );
+
+    Ok(response.to_string())
 }
 
-pub fn run(db: Database) {
+pub fn run(db: Arc<Mutex<Connection>>) {
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
         .invoke_handler(tauri::generate_handler![greet, save_node, get_node])
