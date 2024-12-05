@@ -4,16 +4,18 @@
 mod db;
 use db::db::initialize_db;
 
+mod migrations;
+
 use app_lib::run;
 
 fn main() {
     let db = match initialize_db() {
-        Ok(database) => database,
+        Ok(connection) => connection,
         Err(err) => {
             eprintln!("Failed to initialize database: {}", err);
             std::process::exit(1);
         },
     };
-    
+
     run(db);
 }

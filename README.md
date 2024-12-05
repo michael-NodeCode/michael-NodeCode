@@ -1,4 +1,4 @@
-### Notes Web App
+### NodeCode
 
 > Uses Tauri, Next JS, Surreal DB
 

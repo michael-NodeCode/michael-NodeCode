@@ -32,8 +32,6 @@ function Header({
     greet();
   });
 
-  console.log(color, 'The backend status | FE');
-
   return (
     <nav
       className={`max-w-full w-full sm:px-16 px-6 py-0 border-0 border-red-500 border-solid flex items-center justify-center fixed z-20 text-secondary bg-secondary transition-all duration-300 ease-in-out `}
