@@ -1,13 +1,14 @@
-### NodeCode
+### NodeCode v1.3.0
 
-> Uses Tauri, Next JS, Surreal DB
-
-> Built with Rust, TypeScript, Tailwind CSS
+> Uses Tauri, Next JS, Rusqlite, and Tailwind CSS
 
 ### Development
 ```bash
 ### clone the repo
 git clone https://github.com/nodecodeapp/NodeCodeDesktop.git -b dev
+
+### change directory
+cd NodeCodeDesktop
 
 ### install dependencies
 npm install
