@@ -8,6 +8,9 @@ import { invoke } from '@tauri-apps/api/core';
 import { useAppDispatch, useAppSelector } from '@redux/hooks';
 import { incrementDate, decrementDate, resetDate } from '@redux/dateSlice';
 import { resetTitle } from '@redux/titleSlice';
+import { useEditor } from '../editor/context';
+import { CollectionProvider } from '../editor/provider/provider';
+import logging from '@utils/logger';
 
 function Header() {
   const [toggle, setToggle] = useState(false);
@@ -33,6 +36,30 @@ function Header() {
     greet();
   });
 
+  const { updateProvider, editor } = useEditor()!;
+  
+  useEffect(() => {
+    async function fetchData() {
+      if (!editor) return logging.error('Editor not initialized');
+      const dbId = '07th December 2024';
+      logging.info('Initializing collection...');
+      const provider = await CollectionProvider.loadData(dbId);
+      console.log(provider);
+      updateProvider(provider);
+      const docs = [...provider.collection.docs.values()].map((blocks) =>
+        blocks.getDoc()
+      );
+      if (docs.length === 0) {
+        logging.info('Creating first doc...');
+        provider.collection.createDoc();
+      }else {
+        logging.info('Loading first doc...');
+        editor.doc = docs[0];
+      }
+    }
+    fetchData();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   return (
     <nav
       className={`max-w-full w-full sm:px-16 px-6 py-0 border-0 border-red-500 border-solid flex items-center justify-center fixed z-20 text-secondary bg-secondary transition-all duration-300 ease-in-out `}

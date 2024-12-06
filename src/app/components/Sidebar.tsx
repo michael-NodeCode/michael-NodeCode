@@ -11,15 +11,15 @@ import { RxCross2 } from 'react-icons/rx';
 const Sidebar = () => {
   const [toggle, setToggle] = useState(false);
   const [active, setActive] = useState('');
-  const { collection, editor } = useEditor()!;
+  const { provider, editor } = useEditor()!;
   const [docs, setDocs] = useState<Doc[]>([]);
 
+
   useEffect(() => {
-    if (!collection || !editor) return;
+    if (!provider || !editor) return;
+    const { collection } = provider;
     const updateDocs = () => {
-      const docs = [...collection.docs.values()].map((blocks) =>
-        blocks.getDoc()
-      );
+      const docs = [...collection.docs.values()].map(blocks => blocks.getDoc());
       setDocs(docs);
     };
     updateDocs();
@@ -29,8 +29,8 @@ const Sidebar = () => {
       editor.slots.docLinkClicked.on(updateDocs),
     ];
 
-    return () => disposable.forEach((d) => d.dispose());
-  }, [collection, editor]);
+    return () => disposable.forEach(d => d.dispose());
+  }, [provider, editor]);
 
   return (
     <aside
@@ -69,7 +69,7 @@ const Sidebar = () => {
                   key={doc.id}
                   onClick={() => {
                     if (editor) editor.doc = doc;
-                    const docs = [...collection.docs.values()].map((blocks) =>
+                    const docs = [...provider!.collection.docs.values()].map(blocks =>
                       blocks.getDoc()
                     );
                     setDocs(docs);
