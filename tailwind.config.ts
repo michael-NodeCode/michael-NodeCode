@@ -35,6 +35,12 @@ const config: Config = {
         'white': 'var(--white-color)',
         'black': 'var(--black-color)',
       },
+      borderColor: {
+        'primary': 'var(--primary-color)',
+        'secondary': 'var(--secondary-color)',
+        'white': 'var(--white-color)',
+        'black': 'var(--black-color)',
+      },
       boxShadow: {
         'primary': 'var(--primary-shadow-color)',
         'secondary': 'var(--secondary-shadow-color)',

@@ -21,10 +21,10 @@
       }
     ],
     "paths": {
-      "@components/*": ["./src/components/*"],
+      "@components/*": ["./src/app/components/*"],
       "@utils/*": ["./src/utils/*"],
       "@constants/*": ["./src/constants/*"],
-      "@sections/*": ["./src/sections/*"],
+      "@redux/*": ["./src/redux/*"],
       "@styles/*": ["./src/styles/*"],
       "@types/*": ["./src/types/*"],
     }

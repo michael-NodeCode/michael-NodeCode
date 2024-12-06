@@ -5,9 +5,9 @@ import { FaCircle } from 'react-icons/fa6';
 import Image from 'next/image';
 import { navLinks } from '@constants/index';
 import { invoke } from '@tauri-apps/api/core';
-import { useAppDispatch, useAppSelector } from '@utils/hooks';
-import { incrementDate, decrementDate, resetDate } from '@utils/dateSlice';
-import { resetTitle } from '@utils/titleSlice';
+import { useAppDispatch, useAppSelector } from '@redux/hooks';
+import { incrementDate, decrementDate, resetDate } from '@redux/dateSlice';
+import { resetTitle } from '@redux/titleSlice';
 
 function Header() {
   const [toggle, setToggle] = useState(false);
