@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
     "lib": ["dom", "dom.iterable", "esnext"],
+    "target": "ES2022",
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
@@ -20,10 +21,10 @@
       }
     ],
     "paths": {
-      "@components/*": ["./src/components/*"],
+      "@components/*": ["./src/app/components/*"],
       "@utils/*": ["./src/utils/*"],
       "@constants/*": ["./src/constants/*"],
-      "@sections/*": ["./src/sections/*"],
+      "@redux/*": ["./src/redux/*"],
       "@styles/*": ["./src/styles/*"],
       "@types/*": ["./src/types/*"],
     }

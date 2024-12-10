@@ -1,4 +1,4 @@
-name: 'Macos Build and Distribute'
+name: 'Build and Publish Release'
 
 on:
   push:
@@ -29,9 +29,9 @@ jobs:
             const { data } = await github.rest.repos.createRelease({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              tag_name: `app-v${process.env.PACKAGE_VERSION}`,
-              name: `Desktop App v${process.env.PACKAGE_VERSION}`,
-              body: 'Take a look at the assets to download and install this app.',
+              tag_name: `nodecode-v${process.env.PACKAGE_VERSION}`,
+              name: `NodeCode v${process.env.PACKAGE_VERSION}`,
+              body: 'Latest release of NodeCode Desktop application for all platforms.',
               draft: true,
               prerelease: false
             })
@@ -44,16 +44,27 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        platform: [macos-latest]
+        platform: [
+          { os: 'macos-latest', arch: 'arm64-apple-darwin' },
+          { os: 'macos-latest', arch: 'x86_64-apple-darwin' },
+          { os: 'ubuntu-22.04', arch: 'x86_64-linux' },
+          { os: 'windows-latest', arch: 'x86_64-pc-windows-msvc' }
+        ]
 
-    runs-on: ${{ matrix.platform }}
+    runs-on: ${{ matrix.platform.os }}-${{ matrix.platform.arch }}
     steps:
       - uses: actions/checkout@v3
       - name: setup node
         uses: actions/setup-node@v3
         with:
           node-version: '18.x'
-      
+
+      - name: setup rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install frontend dependencies
+        run: npm install
+
       - name: Cache Node.js dependencies
         uses: actions/cache@v3
         with:
@@ -61,10 +72,6 @@ jobs:
           key: ${{ runner.os }}-node-modules-${{ hashFiles('**/package-lock.json') }}
           restore-keys: |
             ${{ runner.os }}-node-modules-
-
-      - name: Clean Build Directory
-        if: runner.os == 'macOS'
-        run: rm -rf src-tauri/target
 
       - name: Cache Cargo dependencies
         uses: actions/cache@v3
@@ -75,12 +82,6 @@ jobs:
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.toml') }}
           restore-keys: |
             ${{ runner.os }}-cargo-
-
-      - name: Install Rust and Build Application with Kuzu
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Install frontend dependencies
-        run: npm install
 
       - uses: tauri-apps/tauri-action@v0
         env:

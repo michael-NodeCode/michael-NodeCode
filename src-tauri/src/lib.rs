@@ -1,5 +1,5 @@
 use rusqlite::Connection;
-use serde_json::{json, Value as JsonValue};
+use serde::{Deserialize, Serialize};
 use std::sync::{Arc, Mutex};
 use tauri::Manager;
 
@@ -8,228 +8,242 @@ fn greet() -> String {
     "Hello, Backend Is Up along with DB".to_string()
 }
 
-#[tauri::command]
-fn save_node(
-    heading: &str,
-    subheading: &str,
-    blocks: Vec<JsonValue>,
-    db: tauri::State<Arc<Mutex<rusqlite::Connection>>>,
-) -> Result<String, String> {
-    println!("Saving node ...");
+#[derive(Serialize, Deserialize)]
+struct Blob {
+    key: String,
+    value: Vec<u8>,
+}
 
-    let mut conn = db.lock().map_err(|e| e.to_string())?;
-
-    let tx = conn.transaction().map_err(|e| {
-        println!("Failed to start transaction: {}", e);
-        e.to_string()
-    })?;
-
-    if let Err(e) = tx.execute(
-        "INSERT INTO headings (id, name) VALUES (?1, ?2)
-        ON CONFLICT(id) DO UPDATE SET name = excluded.name",
-        &[heading, heading],
-    ) {
-        println!("Error saving heading '{}': {}", heading, e);
-        return Err(format!("Failed to save heading: {}", e));
-    } else {
-        println!("Heading '{}' saved successfully.", heading);
-    }
-
-    let subheading_id = format!("{} {}", heading, subheading);
-    if let Err(e) = tx.execute(
-        "INSERT INTO subheadings (id, name) VALUES (?1, ?2)
-        ON CONFLICT(id) DO UPDATE SET name = excluded.name",
-        &[&subheading_id, subheading],
-    ) {
-        println!("Error saving subheading '{}': {}", subheading, e);
-        return Err(format!("Failed to save subheading: {}", e));
-    } else {
-        println!("Subheading '{}' saved successfully.", subheading);
-    }
-
-    if let Err(e) = tx.execute(
-        "INSERT INTO has_subheading (heading_id, subheading_id) VALUES (?1, ?2)
-        ON CONFLICT(heading_id, subheading_id) DO NOTHING",
-        &[heading, &subheading_id],
-    ) {
-        println!(
-            "Error linking heading '{}' to subheading '{}': {}",
-            heading, subheading, e
-        );
-        return Err(format!("Failed to link heading to subheading: {}", e));
-    } else {
-        println!(
-            "Linked heading '{}' to subheading '{}'.",
-            heading, subheading
-        );
-    }
-
-    let mut new_block_ids = vec![];
-    for block in blocks.clone() {
-        let block_value: JsonValue =
-            serde_json::from_str(&block.as_str().unwrap()).unwrap_or_default();
-
-        let block_id = block_value["id"].as_str().unwrap_or_default().to_string();
-        let content = serde_json::to_string(&block_value["content"]).unwrap_or_default();
-        let block_type = block_value["type"].as_str().unwrap_or_default().to_string();
-        let styles = serde_json::to_string(&block_value["props"]).unwrap_or_default();
-
-        if let Err(e) = tx.execute(
-            "INSERT INTO blocks (id, type, content, styles) VALUES (?1, ?2, ?3, ?4)
-            ON CONFLICT(id) DO UPDATE SET type = excluded.type, content = excluded.content, styles = excluded.styles",
-            [block_id.clone(), block_type, content, styles],
-        ) {
-            println!("Error saving block '{}': {}", block_id, e);
-            return Err(format!("Failed to save block: {}", e));
-        } else {
-            println!("Block '{}' saved successfully.", block_id);
-        }
-
-        new_block_ids.push(block_id.to_string());
-
-        if let Err(e) = tx.execute(
-            "INSERT INTO has_block (subheading_id, block_id) VALUES (?1, ?2)
-            ON CONFLICT(subheading_id, block_id) DO NOTHING",
-            [&subheading_id, &block_id],
-        ) {
-            println!(
-                "Error linking subheading '{}' to block '{}': {}",
-                subheading_id, block_id, e
-            );
-            return Err(format!("Failed to link subheading to block: {}", e));
-        } else {
-            println!(
-                "Linked subheading '{}' to block '{}'.",
-                subheading_id, block_id
-            );
-        }
-    }
-
-    let delete_orphans_query = format!(
-        "DELETE FROM has_block WHERE block_id IN (
-            SELECT b.id FROM Blocks b
-            LEFT JOIN has_block sb ON b.id = sb.block_id
-            WHERE sb.block_id IS NULL AND b.id NOT IN ({})
-        )",
-        new_block_ids
-            .iter()
-            .map(|id| format!("'{}'", id))
-            .collect::<Vec<_>>()
-            .join(", ")
-    );
-
-    tx.execute(&delete_orphans_query, [])
-        .map_err(|e| format!("Failed to delete orphaned block references: {}", e))?;
-    let delete_blocks_query = format!(
-        "DELETE FROM Blocks WHERE id IN (
-            SELECT b.id FROM Blocks b
-            LEFT JOIN has_block sb ON b.id = sb.block_id
-            WHERE sb.block_id IS NULL AND b.id NOT IN ({})
-        )",
-        new_block_ids
-            .iter()
-            .map(|id| format!("'{}'", id))
-            .collect::<Vec<_>>()
-            .join(", ")
-    );
-
-    tx.execute(&delete_blocks_query, [])
-        .map_err(|e| format!("Failed to delete orphaned blocks: {}", e))?;
-    if let Err(e) = tx.execute(&delete_blocks_query, []) {
-        println!("Error deleting orphaned blocks: {}", e);
-        return Err(format!("Failed to delete orphaned blocks: {}", e));
-    } else {
-        println!("Orphaned blocks deleted successfully.");
-    }
-
-    if let Err(e) = tx.commit() {
-        println!("Error committing transaction: {}", e);
-        return Err(format!("Failed to commit transaction: {}", e));
-    }
-
-    println!(
-        "Node '{}' saved successfully with subheading '{}'.",
-        heading, subheading
-    );
-
-    Ok(format!(
-        "Node '{}' with subheading '{}' and blocks saved successfully!",
-        heading, subheading
-    ))
+lazy_static::lazy_static! {
+    static ref DB_CONN: Mutex<Connection> = Mutex::new(Connection::open("data.db").unwrap());
 }
 
 #[tauri::command]
-fn get_node(
-    heading: &str,
-    subheading: &str,
-    db: tauri::State<Arc<Mutex<rusqlite::Connection>>>,
-) -> Result<String, String> {
-    println!("Fetching nodes ...");
+fn init_db() -> Result<(), String> {
+    print!("Initializing DB");
+    let conn = DB_CONN.lock().unwrap();
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS blobs (
+            key TEXT PRIMARY KEY,
+            value BLOB
+        )",
+        [],
+    )
+    .map_err(|e| e.to_string())?;
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS updates (
+      update_id INTEGER PRIMARY KEY AUTOINCREMENT,
+      doc_id TEXT,
+      update_data BLOB,
+      FOREIGN KEY (doc_id) REFERENCES docs(doc_id)
+    )",
+        [],
+    )
+    .map_err(|e| e.to_string())?;
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS docs (
+      doc_id TEXT PRIMARY KEY,
+      root_doc_id TEXT,
+      FOREIGN KEY (root_doc_id) REFERENCES docs(doc_id)
+    )",
+        [],
+    )
+    .map_err(|e| e.to_string())?;
+    print!("DB Initialized");
+    Ok(())
+}
 
-    let conn = db
-        .lock()
-        .map_err(|e| format!("Failed to acquire database lock: {}", e))?;
+#[tauri::command]
+fn insert_blob(key: String, value: Vec<u8>) -> Result<(), String> {
+    print!("Inserting Blob");
+    let conn = DB_CONN.lock().unwrap();
+    conn.execute(
+        "INSERT OR REPLACE INTO blobs (key, value) VALUES (?1, ?2)",
+        [&key as &dyn rusqlite::ToSql, &value as &dyn rusqlite::ToSql],
+    )
+    .map_err(|e| e.to_string())?;
+    print!("Blob Inserted");
+    Ok(())
+}
 
-    let subheading_id = format!("{} {}", heading, subheading);
+#[tauri::command]
+fn insert_root(db_id: String, doc_id: String) -> Result<(), String> {
+    print!("Inserting Root{:?}", db_id);
 
-    let mut stmt = conn
-        .prepare(
-            "SELECT b.id, b.type, b.content, b.styles
-            FROM headings h
-            JOIN has_subheading hs ON h.id = hs.heading_id
-            JOIN subheadings s ON hs.subheading_id = s.id
-            JOIN has_block sb ON s.id = sb.subheading_id
-            JOIN blocks b ON sb.block_id = b.id
-            WHERE s.id = ?1",
+    let conn = DB_CONN.lock().unwrap();
+    let count: i32 = conn
+        .query_row("SELECT COUNT(*) FROM docs WHERE doc_id = ?1", [&doc_id], |row| row.get(0))
+        .map_err(|e| e.to_string())?;
+
+    if count == 0 {
+        conn.execute(
+            "INSERT INTO docs (doc_id, root_doc_id) VALUES (?1, NULL)",
+            [&doc_id as &dyn rusqlite::ToSql],
         )
-        .map_err(|e| format!("Failed to prepare query: {}", e))?;
+        .map_err(|e| e.to_string())?;
+        print!("Root Inserted");
+    } else {
+        print!("Root already exists");
+    }
+    Ok(())
+}
 
-    let blocks = stmt
-        .query_map([&subheading_id], |row| {
-            Ok(json!({
-                "block_id": row.get::<_, String>(0)?,
-                "block_type": row.get::<_, String>(1)?,
-                "block_content": row.get::<_, String>(2)?,
-                "block_styles": row.get::<_, String>(3)?
-            }))
-        })
-        .map_err(|e| format!("Failed to fetch blocks: {}", e))?
-        .filter_map(Result::ok)
-        .collect::<Vec<_>>();
 
-    if blocks.is_empty() {
-        println!(
-            "No blocks found for heading '{}' and subheading '{}'.",
-            heading, subheading
-        );
-        return Ok(json!({
-            "heading": heading,
-            "subheading": subheading,
-            "blocks": []
-        })
-        .to_string());
+#[tauri::command]
+fn insert_update(db_id: String, doc_id: String, update: Vec<u8>) -> Result<(), String> {
+    print!("Inserting Update {:?}", db_id);
+    let conn = DB_CONN.lock().unwrap();
+
+    let count: i32 = conn
+        .query_row("SELECT COUNT(*) FROM docs WHERE doc_id = ?1", [doc_id.clone()], |row| row.get(0))
+        .map_err(|e| e.to_string())?;
+
+    if count == 0 {
+        return Err("Document does not exist".to_string());
     }
 
-    let response = json!({
-        "heading": heading,
-        "subheading": subheading,
-        "blocks": blocks
-    });
+    conn.execute(
+        "INSERT INTO updates (doc_id, update_data) VALUES (?1, ?2)",
+        [
+            &doc_id as &dyn rusqlite::ToSql,
+            &update as &dyn rusqlite::ToSql,
+        ],
+    )
+    .map_err(|e| e.to_string())?;
 
-    println!(
-        "Successfully fetched {} blocks for heading '{}' and subheading '{}'.",
-        blocks.len(),
-        heading,
-        subheading
-    );
+    print!("Update Inserted");
+    Ok(())
+}
 
-    Ok(response.to_string())
+
+#[tauri::command]
+fn get_blob(key: String) -> Result<Vec<u8>, String> {
+    print!("Getting Blob");
+    let conn = DB_CONN.lock().unwrap();
+    conn.query_row("SELECT value FROM blobs WHERE key = ?1", [key], |row| {
+        row.get(0)
+    })
+    .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn delete_blob(key: String) -> Result<(), String> {
+    print!("Deleting Blob");
+    let conn = DB_CONN.lock().unwrap();
+    conn.execute("DELETE FROM blobs WHERE key = ?1", [key])
+        .map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
+fn list_blobs() -> Result<Vec<String>, String> {
+    print!("Listing Blobs");
+    let conn = DB_CONN.lock().unwrap();
+    let mut stmt = conn
+        .prepare("SELECT key FROM blobs")
+        .map_err(|e| e.to_string())?;
+    let keys = stmt
+        .query_map([], |row| row.get(0))
+        .map_err(|e| e.to_string())?
+        .collect::<Result<Vec<String>, _>>()
+        .map_err(|e| e.to_string())?;
+    print!("Blobs Listed");
+    Ok(keys)
+}
+
+#[tauri::command]
+fn insert_doc(doc_id: String, root_doc_id: Option<String>) -> Result<(), String> {
+    print!("Inserting Doc");
+    let conn = DB_CONN.lock().unwrap();
+
+    if let Some(root_doc_id) = &root_doc_id {
+        let count: i32 = conn
+            .query_row("SELECT COUNT(*) FROM docs WHERE doc_id = ?1", [root_doc_id], |row| row.get(0))
+            .map_err(|e| e.to_string())?;
+
+        if count == 0 {
+            return Err("Root document does not exist".to_string());
+        }
+    }
+
+    conn.execute(
+        "INSERT INTO docs (doc_id, root_doc_id) VALUES (?1, ?2)",
+        [&doc_id as &dyn rusqlite::ToSql, &root_doc_id],
+    )
+    .map_err(|e| e.to_string())?;
+
+    print!("Doc Inserted");
+    Ok(())
+}
+
+
+#[tauri::command]
+fn get_root_doc_id() -> Result<String, String> {
+    print!("Getting Root Doc ID");
+    let conn = DB_CONN.lock().unwrap();
+    conn.query_row(
+        "SELECT * FROM docs WHERE root_doc_id IS NULL",
+        [],
+        |row| row.get(0),
+    )
+    .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn get_updates(doc_id: String) -> Result<Vec<Vec<u8>>, String> {
+    print!("Getting Updates");
+    let conn = DB_CONN.lock().unwrap();
+    let mut stmt = conn
+        .prepare("SELECT update_data FROM updates WHERE doc_id = ?1")
+        .map_err(|e| e.to_string())?;
+    let updates = stmt
+        .query_map([doc_id], |row| row.get(0))
+        .map_err(|e| e.to_string())?
+        .collect::<Result<Vec<Vec<u8>>, _>>()
+        .map_err(|e| e.to_string())?;
+    print!("Updates Retrieved :{:?}", updates);
+    Ok(updates)
+}
+
+#[tauri::command]
+fn is_table_empty(table_name: String) -> Result<bool, String> {
+    print!("Checking if table is empty");
+    let conn = DB_CONN.lock().unwrap();
+    let query = format!("SELECT COUNT(*) FROM {}", table_name);
+    let count: i32 = conn
+        .query_row(&query, [], |row| row.get(0))
+        .map_err(|e| e.to_string())?;
+    print!("Table is empty: {}", count == 0);
+    Ok(count == 0)
+}
+
+#[tauri::command]
+fn load_db(file_path: String) -> Result<(), String> {
+    print!("Loading DB");
+    let conn = Connection::open(file_path).map_err(|e| e.to_string())?;
+    *DB_CONN.lock().unwrap() = conn;
+    print!("DB Loaded");
+    Ok(())
 }
 
 pub fn run(db: Arc<Mutex<Connection>>) {
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
-        .invoke_handler(tauri::generate_handler![greet, save_node, get_node])
+        .invoke_handler(tauri::generate_handler![
+            greet,
+            init_db,
+            insert_blob,
+            get_blob,
+            delete_blob,
+            list_blobs,
+            insert_doc,
+            get_root_doc_id,
+            get_updates,
+            is_table_empty,
+            load_db,
+            insert_root,
+            insert_update,
+        ])
         .setup(|app| {
             app.manage(db);
             Ok(())

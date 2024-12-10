@@ -5,17 +5,21 @@ import { FaCircle } from 'react-icons/fa6';
 import Image from 'next/image';
 import { navLinks } from '@constants/index';
 import { invoke } from '@tauri-apps/api/core';
+import { useAppDispatch, useAppSelector } from '@redux/hooks';
+import { incrementDate, decrementDate, resetDate } from '@redux/dateSlice';
+import { resetTitle } from '@redux/titleSlice';
+import { useEditor } from '../editor/context';
+import { CollectionProvider } from '../editor/provider/provider';
+import logging from '@utils/logger';
 
-function Header({
-  heading,
-  subHeading,
-}: {
-  heading: string;
-  subHeading: string;
-}) {
+function Header() {
   const [toggle, setToggle] = useState(false);
   const [active, setActive] = useState('');
   const [showSidebarIcons, setShowSidebarIcons] = useState(false);
+
+  const dispatch = useAppDispatch();
+  const title = useAppSelector((state) => state.title.title);
+  const currentDate = useAppSelector((state) => state.date.currentDate);
 
   const [color, setColor] = useState('text-green-400');
   async function greet() {
@@ -32,11 +36,35 @@ function Header({
     greet();
   });
 
+  const { updateProvider, editor } = useEditor()!;
+  
+  useEffect(() => {
+    async function fetchData() {
+      if (!editor) return logging.error('Editor not initialized');
+      const dbId = '07th December 2024';
+      logging.info('Initializing collection...');
+      const provider = await CollectionProvider.loadData(dbId);
+      console.log(provider);
+      updateProvider(provider);
+      const docs = [...provider.collection.docs.values()].map((blocks) =>
+        blocks.getDoc()
+      );
+      if (docs.length === 0) {
+        logging.info('Creating first doc...');
+        provider.collection.createDoc();
+      }else {
+        logging.info('Loading first doc...');
+        editor.doc = docs[0];
+      }
+    }
+    fetchData();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   return (
     <nav
       className={`max-w-full w-full sm:px-16 px-6 py-0 border-0 border-red-500 border-solid flex items-center justify-center fixed z-20 text-secondary bg-secondary transition-all duration-300 ease-in-out `}
     >
-      <div className="w-full flex justify-between items-center text-inherit">
+      <div className="w-full flex justify-between items-center text-inherit min-h-[72px]">
         <span className="flex items-center">
           <Image
             src={'/images/logo.png'}
@@ -46,17 +74,32 @@ function Header({
             className="w-9 h-9 object-contain rounded-lg"
             onClick={() => {
               setShowSidebarIcons(!showSidebarIcons);
+              dispatch(resetTitle());
+              dispatch(resetDate());
             }}
           />
           <div className="flex flex-row justify-start items-center text-left text-primary -ml-2">
-            <MdKeyboardArrowLeft className="text-7xl leading-none -mr-4" />
-            <span className="flex flex-col justify-start items-start">
-              <p className="text-xs font-bold">{heading}</p>
+            {!title && (
+              <MdKeyboardArrowLeft
+                className="text-7xl leading-none -mr-4"
+                onClick={() => dispatch(decrementDate())}
+              />
+            )}
+            <span
+              className={`flex flex-col justify-start items-start ${
+                title ? 'ml-6' : ''
+              }`}
+            >
               <p className="font-extrabold text-2xl leading-none">
-                {subHeading}
+                {title || currentDate}
               </p>
             </span>
-            <MdKeyboardArrowRight className="text-7xl leading-none -ml-4" />
+            {!title && (
+              <MdKeyboardArrowRight
+                className="text-7xl leading-none -ml-4"
+                onClick={() => dispatch(incrementDate())}
+              />
+            )}
           </div>
         </span>
         <span className="flex flex-row items-center">

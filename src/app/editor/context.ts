@@ -1,18 +1,14 @@
-'use client';
-
 import { AffineEditorContainer } from '@blocksuite/presets';
-import { DocCollection } from '@blocksuite/store';
 import { createContext, useContext } from 'react';
+import { CollectionProvider } from './provider/provider';
 
 export interface EditorContextType {
   editor: AffineEditorContainer | null;
-  collection: DocCollection | null;
+  provider: CollectionProvider | null;
+  updateProvider: (newProvider: CollectionProvider) => void;
 }
 
-export const EditorContext = createContext<EditorContextType>({
-  editor: null,
-  collection: null
-});
+export const EditorContext = createContext<EditorContextType | null>(null);
 
 export function useEditor() {
   return useContext(EditorContext);
