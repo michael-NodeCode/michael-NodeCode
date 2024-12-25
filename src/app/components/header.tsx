@@ -19,6 +19,7 @@ function Header() {
   const currentDate = useAppSelector((state) => state.date.currentDate);
 
   const [color, setColor] = useState('text-green-400');
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async function greet() {
     try {
       await invoke('greet').then(() => {
@@ -30,7 +31,7 @@ function Header() {
     }
   }
   useEffect(() => {
-    greet();
+    // greet();
   });
 
   return (
