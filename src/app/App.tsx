@@ -49,12 +49,12 @@ const App: React.FC = () => {
     <div className="max-w-[100vw] h-screen overflow-hidden overflow-y-auto justify-start items-center relative bg-white">
       <Header />
       <Sidebar />
-      <div className="bg-primary min-h-screen w-full flex px-[4.8rem] max-sm:px-0 pb-0 py-[4.8rem] pr-1 text-white">
-        <div className="border-2 border-solid border-primary w-full p-4 pt-0 rounded-lg text-body">
-          <div className="shadow-sm bg-primary text-white text-lg p-2 mt-4 focus-within:ring-2 focus-within:ring-primary h-full">
+      <div className="bg-white min-h-screen w-full flex px-[4.8rem] max-sm:px-0 pb-0 py-[4.8rem] pr-1 text-white">
+        <div className="border-2 border-solid border-primary w-full rounded-lg text-body">
+          <div className="shadow-sm bg-white rouneded-lg focus-within:ring-2 focus-within:ring-primary h-full">
             <EditorContentWithNoSSR
               editor={editor}
-              className="prose max-w-none border rounded-lg p-2"
+              className="prose max-w-none text-body"
             />
           </div>
         </div>
