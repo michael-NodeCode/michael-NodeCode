@@ -19,12 +19,20 @@ const EditorContentWithNoSSR = dynamic(
 const App: React.FC = () => {
   const dispatch = useAppDispatch();
   const currentDate = useAppSelector((state) => state.date.currentDate);
+  const title = useAppSelector((state) => state.title.title);
 
   const editor: Editor | null = useEditor({
-    extensions: [StarterKit, InternalLink.configure({
-      dispatch, // Pass Redux dispatch function
-    }),],
-    content: `<h1>${currentDate} </h1> \n\n <p> </p>`,
+    extensions: [
+      StarterKit,
+      InternalLink.configure({
+        dispatch,
+        getState: () => ({
+          currentDate,
+          title,
+        }),
+      }),
+    ],
+    content: `<p> </p>`,
     onUpdate: ({ editor }) => {
       const json = editor.getJSON();
       console.log('Editor Content as JSON:', json);

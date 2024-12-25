@@ -8,7 +8,8 @@ interface InternalLinkAttributes {
 }
 
 interface InternalLinkOptions {
-  dispatch: Dispatch<any>; // Redux dispatch function
+  dispatch: Dispatch<any>;
+  getState: () => { currentDate: string; title: string | null };
 }
 
 const InternalLink = Mark.create<InternalLinkOptions>({
@@ -16,7 +17,8 @@ const InternalLink = Mark.create<InternalLinkOptions>({
 
   addOptions(): InternalLinkOptions {
     return {
-      dispatch: (action) => action, // Default dispatch function
+      dispatch: (action) => action,
+      getState: () => ({ currentDate: '', title: null }),
     };
   },
 
@@ -37,14 +39,12 @@ const InternalLink = Mark.create<InternalLinkOptions>({
   },
 
   renderHTML({ HTMLAttributes }: { HTMLAttributes: Record<string, any> }) {
-    console.log('Rendering HTML for internal link:', HTMLAttributes);
-
     return [
       'span',
       {
         ...HTMLAttributes,
         'data-type': 'internal-link',
-        'data-href': HTMLAttributes.href, // Store href in data-href instead
+        'data-href': HTMLAttributes.href,
         class: 'text-blue-500 underline hover:text-blue-700 cursor-pointer',
       },
       0,
@@ -60,7 +60,6 @@ const InternalLink = Mark.create<InternalLinkOptions>({
         type: this.type,
         getAttributes: (match: string[]): InternalLinkAttributes => {
           const [, linkText] = match;
-          console.log('Creating input rule for link:', linkText);
           return { href: linkText };
         },
       }),
@@ -74,23 +73,54 @@ const InternalLink = Mark.create<InternalLinkOptions>({
           handleClickOn: (view, pos, node, nodePos, event) => {
             const target = event.target as HTMLElement;
             if (target.dataset.type === 'internal-link') {
-              event.preventDefault(); // Prevent default browser behavior
-              event.stopPropagation(); // Stop the event from bubbling up
+              event.preventDefault();
+              event.stopPropagation();
 
-              const href = target.dataset.href; // Use data-href instead of href
+              const href = target.dataset.href;
               if (href) {
                 console.log('Navigating to:', href);
 
-                // Dispatch Redux actions
-                this.options.dispatch({ type: 'date/setDate', payload: href });
-                this.options.dispatch({ type: 'title/setTitle', payload: href });
+                const state = this.options.getState();
+                const currentDate = state.currentDate;
+                const lastPageTitle = state.title || currentDate;
 
-                // Update editor content
+                this.options.dispatch({ type: 'date/setDate', payload: href });
+                this.options.dispatch({
+                  type: 'title/setTitle',
+                  payload: href,
+                });
+
+                const heading = view.state.schema.nodes.heading.create(
+                  { level: 1 },
+                  view.state.schema.text(href)
+                );
+                const backReference =
+                  lastPageTitle &&
+                  view.state.schema.nodes.paragraph.create(
+                    {},
+                    view.state.schema.text(`Back to [[${lastPageTitle}]]`, [
+                      view.state.schema.marks.internalLink.create({
+                        href: lastPageTitle,
+                      }),
+                    ])
+                  );
+
+                const fragment = backReference
+                  ? view.state.schema.nodes.doc.create(null, [
+                      heading,
+                      backReference,
+                    ])
+                  : view.state.schema.nodes.doc.create(null, [heading]);
+
                 view.dispatch(
-                  view.state.tr.replaceWith(0, view.state.doc.content.size, view.state.schema.text(`<h1>${href}</h1>`))
+                  view.state.tr.replaceWith(
+                    0,
+                    view.state.doc.content.size,
+                    fragment
+                  )
                 );
 
-                return true; // Stop further handling
+                return true;
               }
             }
             return false;
