@@ -1,36 +1,14 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { Doc } from '@blocksuite/store';
-import { useEditor } from '../editor/context';
 import Image from 'next/image';
 import { navLinks } from '@constants/index';
 import { FaCircle } from 'react-icons/fa6';
 import { RxCross2 } from 'react-icons/rx';
+import { useState } from 'react';
 
 const Sidebar = () => {
   const [toggle, setToggle] = useState(false);
   const [active, setActive] = useState('');
-  const { provider, editor } = useEditor()!;
-  const [docs, setDocs] = useState<Doc[]>([]);
-
-
-  useEffect(() => {
-    if (!provider || !editor) return;
-    const { collection } = provider;
-    const updateDocs = () => {
-      const docs = [...collection.docs.values()].map(blocks => blocks.getDoc());
-      setDocs(docs);
-    };
-    updateDocs();
-
-    const disposable = [
-      collection.slots.docUpdated.on(updateDocs),
-      editor.slots.docLinkClicked.on(updateDocs),
-    ];
-
-    return () => disposable.forEach(d => d.dispose());
-  }, [provider, editor]);
 
   return (
     <aside
@@ -54,32 +32,6 @@ const Sidebar = () => {
               className="w-10 h-10 object-contain rounded-lg cursor-pointer"
             />
           </span>
-          <div className="flex w-full h-full flex-col justify-start items-center">
-            <div className="text-primary font-bold items-center text-center text-xl my-2">
-              Nodes
-            </div>
-            <div className="min-h-4 opacity-100 font-bold text-primary w-full text-sm">
-              {docs.map((doc) => (
-                <div
-                  className={`${
-                    editor?.doc === doc
-                      ? 'bg-primary text-secondary px-1 w-full truncate'
-                      : ''
-                  }`}
-                  key={doc.id}
-                  onClick={() => {
-                    if (editor) editor.doc = doc;
-                    const docs = [...provider!.collection.docs.values()].map(blocks =>
-                      blocks.getDoc()
-                    );
-                    setDocs(docs);
-                  }}
-                >
-                  {doc.meta?.title || 'Untitled'}
-                </div>
-              ))}
-            </div>
-          </div>
         </div>
         <Image
           src={'/images/profile.png'}
