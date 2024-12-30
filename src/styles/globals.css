@@ -16,6 +16,33 @@
   --black-shadow-color: 0 4px 6px rgba(7, 7, 7, 0.5);
 }
 
+/* global css */
+ul {
+  list-style: none;  
+  margin-left: 0;
+  padding-left: 0;
+}
+
+li {
+  list-style: none;       
+  margin-left: 0;
+  padding-left: 0;
+}
+
+li::marker {
+  content: '';
+}
+
+.prose ul {
+  list-style-type: none !important;
+  padding-left: 0 !important;
+  margin-left: 0 !important;
+}
+
+.prose li::marker {
+  content: none !important;
+}
+
 /* hide scroll bar */
 ::-webkit-scrollbar-track {
   background-color: transparent;

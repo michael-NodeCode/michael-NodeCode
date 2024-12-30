@@ -4,8 +4,14 @@ import React, { useEffect } from 'react';
 import { useEditor, Editor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import dynamic from 'next/dynamic';
+
 import { useAppDispatch, useAppSelector } from '@redux/hooks';
+import { setDate } from '@redux/dateSlice';
+import { setTitle } from '@redux/titleSlice';
+
+import { CustomListItem } from './editor/CustomListItem';
 import InternalLink from './editor/InternalLink';
+
 import Header from '@components/header';
 import Sidebar from './components/Sidebar';
 
@@ -23,7 +29,17 @@ const App: React.FC = () => {
 
   const editor: Editor | null = useEditor({
     extensions: [
-      StarterKit,
+      StarterKit.configure({
+        listItem: false,
+      }),
+      CustomListItem.configure({
+        dispatch,
+        onBulletClick: (itemText: string) => {
+          console.log('Custom bullet click callback:', itemText);
+          dispatch(setDate(itemText));
+          dispatch(setTitle(itemText));
+        },
+      }),
       InternalLink.configure({
         dispatch,
         getState: () => ({
@@ -32,7 +48,13 @@ const App: React.FC = () => {
         }),
       }),
     ],
-    content: `<ul> </ul>`,
+    content: `
+      <ul class="list-none p-0 m-0">
+        <li>Item A</li>
+        <li>Item B</li>
+        <li>Click me</li>
+      </ul>
+    `,
     onUpdate: ({ editor }) => {
       const json = editor.getJSON();
       console.log('Editor Content as JSON:', json);

@@ -50,6 +50,7 @@ function Header() {
               setShowSidebarIcons(!showSidebarIcons);
               dispatch(resetTitle());
               dispatch(resetDate());
+              window.location.reload();
             }}
           />
           <div className="flex flex-row justify-start items-center text-left text-primary -ml-2">
