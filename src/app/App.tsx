@@ -32,7 +32,7 @@ const App: React.FC = () => {
         }),
       }),
     ],
-    content: `<p> </p>`,
+    content: `<ul> </ul>`,
     onUpdate: ({ editor }) => {
       const json = editor.getJSON();
       console.log('Editor Content as JSON:', json);
@@ -49,14 +49,12 @@ const App: React.FC = () => {
     <div className="max-w-[100vw] h-screen overflow-hidden overflow-y-auto justify-start items-center relative bg-white">
       <Header />
       <Sidebar />
-      <div className="bg-white min-h-screen w-full flex px-[4.8rem] max-sm:px-0 pb-0 py-[4.8rem] pr-1 text-white">
-        <div className="border-2 border-solid border-primary w-full rounded-lg text-body">
-          <div className="shadow-sm bg-white rouneded-lg focus-within:ring-2 focus-within:ring-primary h-full">
-            <EditorContentWithNoSSR
-              editor={editor}
-              className="prose max-w-none text-body"
-            />
-          </div>
+      <div className="bg-primary min-h-screen w-full flex px-[4.8rem] max-sm:px-0 pb-0 py-[4.8rem] pr-1 text-white">
+        <div className="shadow-sm bg-primary rouneded-lg h-full w-full p-2">
+          <EditorContentWithNoSSR
+            editor={editor}
+            className="prose max-w-none text-body text-white border-2 border-gray-400 border-solid rounded-lg"
+          />
         </div>
       </div>
     </div>

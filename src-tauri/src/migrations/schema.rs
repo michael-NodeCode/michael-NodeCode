@@ -6,5 +6,6 @@ pub const MIGRATION_001: &str = r#"
     );
 
     INSERT OR IGNORE INTO schema_version (version) VALUES (1);
+    
 "#;
 

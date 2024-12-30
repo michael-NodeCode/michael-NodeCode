@@ -251,3 +251,4 @@ pub fn run(db: Arc<Mutex<Connection>>) {
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
+

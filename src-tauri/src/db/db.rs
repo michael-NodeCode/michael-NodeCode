@@ -101,6 +101,7 @@ fn set_schema_version(conn: &Connection, version: i32) -> Result<()> {
     if let Err(e) = conn.execute("UPDATE schema_version SET version = ?1", &[&version]) {
         println!("Failed to update schema version: {}", e);
         return Err(rusqlite::Error::ToSqlConversionFailure(Box::new(e)));
+        
     }
 
     println!("Schema version updated to {}", version);
