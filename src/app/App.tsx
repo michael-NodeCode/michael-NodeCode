@@ -6,14 +6,13 @@ import StarterKit from '@tiptap/starter-kit';
 import dynamic from 'next/dynamic';
 
 import { useAppDispatch, useAppSelector } from '@redux/hooks';
-import { setDate } from '@redux/dateSlice';
 import { setTitle } from '@redux/titleSlice';
 
-import { CustomListItem } from './editor/CustomListItem';
-import InternalLink from './editor/InternalLink';
-
 import Header from '@components/header';
-import Sidebar from './components/Sidebar';
+import Sidebar from '@components/Sidebar';
+
+import InternalLink from '@editor/InternalLink';
+import { CollapsibleListItem } from '@editor/CollapsableListItem';
 
 const EditorContentWithNoSSR = dynamic(
   () => import('@tiptap/react').then((mod) => mod.EditorContent),
@@ -32,12 +31,10 @@ const App: React.FC = () => {
       StarterKit.configure({
         listItem: false,
       }),
-      CustomListItem.configure({
+      CollapsibleListItem.configure({
         dispatch,
-        onBulletClick: (itemText: string) => {
-          console.log('Custom bullet click callback:', itemText);
-          dispatch(setDate(itemText));
-          dispatch(setTitle(itemText));
+        onNavigate: (text) => {
+          dispatch(setTitle(text));
         },
       }),
       InternalLink.configure({
@@ -48,13 +45,19 @@ const App: React.FC = () => {
         }),
       }),
     ],
+    editorProps: {
+      attributes: {
+        class:
+          'prose prose-sm sm:prose-base lg:prose-lg xl:prose-2xl m-5 focus:outline-none text-white rounded-lg border-2 border-gray-400 border-solid md:min-w-[90vw] min-w-full nested-list',
+      },
+    },
     content: `
-      <ul class="list-none p-0 m-0">
-        <li>Item A</li>
-        <li>Item B</li>
-        <li>Click me</li>
-      </ul>
-    `,
+    <ul>
+      <li>
+        
+      </li>
+    </ul>
+  `,
     onUpdate: ({ editor }) => {
       const json = editor.getJSON();
       console.log('Editor Content as JSON:', json);
@@ -72,11 +75,8 @@ const App: React.FC = () => {
       <Header />
       <Sidebar />
       <div className="bg-primary min-h-screen w-full flex px-[4.8rem] max-sm:px-0 pb-0 py-[4.8rem] pr-1 text-white">
-        <div className="shadow-sm bg-primary rouneded-lg h-full w-full p-2">
-          <EditorContentWithNoSSR
-            editor={editor}
-            className="prose max-w-none text-body text-white border-2 border-gray-400 border-solid rounded-lg"
-          />
+        <div className="shadow-sm bg-primary rouneded-lg h-full w-full">
+          <EditorContentWithNoSSR editor={editor} />
         </div>
       </div>
     </div>

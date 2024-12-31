@@ -17,30 +17,17 @@
 }
 
 /* global css */
-ul {
-  list-style: none;  
-  margin-left: 0;
-  padding-left: 0;
-}
-
-li {
-  list-style: none;       
-  margin-left: 0;
-  padding-left: 0;
-}
-
-li::marker {
-  content: '';
+.prose ul ul,
+.prose ol ol,
+.prose ul ol,
+.prose ol ul {
+  margin-left: 0rem;
+  border-left: 2px solid #666;
+  position: relative;
 }
 
 .prose ul {
-  list-style-type: none !important;
-  padding-left: 0 !important;
-  margin-left: 0 !important;
-}
-
-.prose li::marker {
-  content: none !important;
+  list-style: none; 
 }
 
 /* hide scroll bar */
