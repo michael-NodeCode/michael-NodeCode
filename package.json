@@ -1,6 +1,6 @@
 {
   "name": "nodecode",
-  "version": "1.3.0",
+  "version": "1.5.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -10,9 +10,9 @@
     "tauri": "tauri"
   },
   "dependencies": {
-    "@blocksuite/blocks": "0.15.0-canary-202406291027-8aed732",
-    "@blocksuite/presets": "0.15.0-canary-202406291027-8aed732",
-    "@blocksuite/store": "0.15.0-canary-202406291027-8aed732",
+    "@blocknote/core": "^0.16.0",
+    "@blocknote/mantine": "^0.16.0",
+    "@blocknote/react": "^0.16.0",
     "@reduxjs/toolkit": "^2.4.0",
     "@tailwindcss/typography": "^0.5.15",
     "@tauri-apps/api": "^2.1.0",

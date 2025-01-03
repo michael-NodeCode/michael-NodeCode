@@ -25,7 +25,6 @@
       "@utils/*": ["./src/utils/*"],
       "@constants/*": ["./src/constants/*"],
       "@redux/*": ["./src/redux/*"],
-      "@editor/*": ["./src/app/editor/*"],
       "@styles/*": ["./src/styles/*"],
       "@types/*": ["./src/types/*"],
     }
