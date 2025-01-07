@@ -1,13 +1,10 @@
-'use client';
-import React, { useEffect, useState } from 'react';
+/* eslint-disable @next/next/no-img-element */
+import { useState } from 'react';
 import { MdKeyboardArrowLeft, MdKeyboardArrowRight } from 'react-icons/md';
-import { FaCircle } from 'react-icons/fa6';
-import Image from 'next/image';
 import { navLinks } from '@constants/index';
-import { invoke } from '@tauri-apps/api/core';
+import { resetTitle } from '@redux/titleSlice';
 import { useAppDispatch, useAppSelector } from '@redux/hooks';
 import { incrementDate, decrementDate, resetDate } from '@redux/dateSlice';
-import { resetTitle } from '@redux/titleSlice';
 
 function Header() {
   const [toggle, setToggle] = useState(false);
@@ -18,29 +15,13 @@ function Header() {
   const title = useAppSelector((state) => state.title.title);
   const currentDate = useAppSelector((state) => state.date.currentDate);
 
-  const [color, setColor] = useState('text-green-400');
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  async function greet() {
-    try {
-      await invoke('greet').then(() => {
-        setColor('text-green-400');
-      });
-    } catch (error) {
-      console.error(error);
-      setColor('text-red-400');
-    }
-  }
-  useEffect(() => {
-    // greet();
-  });
-
   return (
     <nav
       className={`max-w-full w-full sm:px-16 px-6 py-0 border-0 border-red-500 border-solid flex items-center justify-center fixed z-20 text-secondary bg-secondary transition-all duration-300 ease-in-out `}
     >
       <div className="w-full flex justify-between items-center text-inherit min-h-[72px]">
         <span className="flex items-center">
-          <Image
+          <img
             src={'/images/logo.png'}
             width={72}
             height={72}
@@ -78,7 +59,7 @@ function Header() {
           </div>
         </span>
         <span className="flex flex-row items-center">
-          <Image
+          <img
             src={'/images/profile.png'}
             width={72}
             height={72}
@@ -109,10 +90,6 @@ function Header() {
                 <a href={`${nav.id}`}>{nav.title}</a>
               </li>
             ))}
-            <li className="flex flex-row justify-center items-center text-center space-x-2 font-poppins font-medium cursor-pointer text-heading">
-              <span>Connection</span>{' '}
-              <FaCircle className={`${color} text-xl mt-2`} />
-            </li>
           </ul>
         </div>
         <div
@@ -121,14 +98,14 @@ function Header() {
           } p-6 bg-secondary shadow-primary text-inherit absolute top-16 left-0 h-max my-2 w-max z-10 overflow-hidden sm:hidden`}
         >
           <span className="flex flex-col justify-start items-center text-center space-y-6">
-            <Image
+            <img
               src={'/images/calendar.png'}
               width={72}
               height={72}
               alt="Toggle Menu"
               className="w-10 h-10 object-contain rounded-lg cursor-pointer"
             />
-            <Image
+            <img
               src={'/images/library.png'}
               width={72}
               height={72}

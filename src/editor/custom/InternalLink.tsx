@@ -70,7 +70,7 @@ const InternalLink = Mark.create<InternalLinkOptions>({
     return [
       new Plugin({
         props: {
-          handleClickOn: (view, pos, node, nodePos, event) => {
+          handleClickOn: (view, _pos, _node, _nodePos, event) => {
             const target = event.target as HTMLElement;
             if (target.dataset.type === 'internal-link') {
               event.preventDefault();

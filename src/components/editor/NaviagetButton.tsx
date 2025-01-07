@@ -1,13 +1,15 @@
 import { SideMenuProps, useComponentsContext } from '@blocknote/react';
 import { useAppDispatch, useAppSelector } from '@redux/hooks';
-import { NodeData, saveNodeData } from '@redux/nodeSlice';
-import { useRouter } from 'next/navigation';
+import { saveNodeData } from '@redux/nodeSlice';
+import type { NodeData } from '../../types/node';
 import { IoNavigateCircle } from 'react-icons/io5';
+import { useNavigate } from 'react-router-dom';
 
 export function NavigateButton(props: SideMenuProps) {
   const Components = useComponentsContext()!;
   const dispatch = useAppDispatch();
-  const router = useRouter();
+
+  const navigate = useNavigate();
 
   const date = useAppSelector((state) => state.date.currentDate);
 
@@ -20,8 +22,7 @@ export function NavigateButton(props: SideMenuProps) {
       type: 'title/setTitle',
       payload: title,
     });
-
-    router.push(`/node/${block.id}`);
+    navigate(`/node/${block.id}`);
   };
 
   return (

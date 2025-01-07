@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-'use client';
-
-import '@blocknote/core/fonts/inter.css';
+import { useEffect, useState } from 'react';
+import { useParams } from 'react-router-dom';
 import {
   DragHandleButton,
   SideMenu,
@@ -10,39 +9,20 @@ import {
   useCreateBlockNote,
 } from '@blocknote/react';
 import {
-  type PartialBlock,
-  type DefaultBlockSchema,
-  Block,
-  filterSuggestionItems,
-} from '@blocknote/core';
-import { BlockNoteView } from '@blocknote/mantine';
-import '@blocknote/mantine/style.css';
-import { useEffect, useState } from 'react';
-import { NavigateButton } from '../../blocknote-editor/editor/NaviagetButton';
-import { useAppSelector } from '@redux/hooks';
-import { NodeData } from '@redux/nodeSlice';
-import {
   getCustomSlashMenuItems,
   getCustomSquareBracketMenuItems,
   searchForNode,
 } from '@utils/editor';
+import { NodeData } from '../types/node';
+import { useAppSelector } from '@redux/hooks';
+import { BlockNoteView } from '@blocknote/mantine';
+import { nodeDataToPartialBlock } from '@utils/node-converter';
+import { Block, filterSuggestionItems } from '@blocknote/core';
+import { NavigateButton } from '@components/editor/NaviagetButton';
 
-export const dynamic = 'force-dynamic';
+export default function Page() {
+  const { id } = useParams<{ id: string }>();
 
-function nodeDataToPartialBlock(
-  node: NodeData
-): PartialBlock<DefaultBlockSchema> {
-  return {
-    id: node.id,
-    type: node.type as any, 
-    props: { ...node.props },
-    content: node.content,
-    children: node.children?.map((child) => nodeDataToPartialBlock(child)),
-  };
-}
-
-export default function RedirectEditor({ params }: { params: { id: string } }) {
-  const { id } = params;
   const nodes = useAppSelector((state) => state.node.nodeData);
 
   const [nodeData, setNodeData] = useState<NodeData | null>(null);
@@ -77,7 +57,7 @@ export default function RedirectEditor({ params }: { params: { id: string } }) {
   // Get the Data from store for the Node ID
   useEffect(() => {
     if (!id) return;
-    const node = nodes.find((n: { id: string; }) => n.id === id);
+    const node = nodes.find((n: { id: string }) => n.id === id);
     if (node) {
       console.log(nodes, 'nodes');
       setNodeData(node);

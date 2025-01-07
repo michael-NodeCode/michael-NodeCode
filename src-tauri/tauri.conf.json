@@ -4,15 +4,15 @@
   "version": "1.5.0",
   "identifier": "com.nodecode.dev",
   "build": {
-    "frontendDist": "../out",
-    "devUrl": "http://localhost:3000",
     "beforeDevCommand": "npm run dev",
-    "beforeBuildCommand": "npm run build"
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../dist"
   },
   "app": {
     "windows": [
       {
-        "title": "NodeCode",
+        "title": "nodecode",
         "width": 800,
         "height": 600,
         "resizable": true,

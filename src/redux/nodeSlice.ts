@@ -1,17 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-
-export interface NodeData {
-  id: string;
-  type: string;
-  props: Record<string, any>;
-  content: any[];
-  children: any[];
-}
-
-interface NodeState {
-  nodeData: NodeData[];
-}
+import type { NodeData, NodeState } from '../types/node';
 
 const initialState: NodeState = {
   nodeData: [],

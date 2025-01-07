@@ -39,3 +39,9 @@ next-env.d.ts
 **.db
 **.log
 **.sqlite
+# Sentry Config File
+.env.sentry-build-plugin
+
+.env
+dist
+env

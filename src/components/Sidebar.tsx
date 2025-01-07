@@ -1,10 +1,8 @@
-'use client';
-
-import Image from 'next/image';
+/* eslint-disable @next/next/no-img-element */
+import { useState } from 'react';
 import { navLinks } from '@constants/index';
 import { FaCircle } from 'react-icons/fa6';
 import { RxCross2 } from 'react-icons/rx';
-import { useState } from 'react';
 
 const Sidebar = () => {
   const [toggle, setToggle] = useState(false);
@@ -17,14 +15,14 @@ const Sidebar = () => {
       <div className="flex flex-col justify-between items-center text-inherit h-full w-full">
         <div className="flex flex-col items-center w-full">
           <span className="flex flex-col justify-start items-center text-center space-y-6">
-            <Image
+            <img
               src={'/images/calendar.png'}
               width={72}
               height={72}
               alt="Toggle Menu"
               className="w-10 h-10 object-contain rounded-lg cursor-pointer"
             />
-            <Image
+            <img
               src={'/images/library.png'}
               width={72}
               height={72}
@@ -33,7 +31,7 @@ const Sidebar = () => {
             />
           </span>
         </div>
-        <Image
+        <img
           src={'/images/profile.png'}
           width={72}
           height={72}

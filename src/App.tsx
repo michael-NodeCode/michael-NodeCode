@@ -1,15 +1,7 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-/* eslint-disable @typescript-eslint/no-explicit-any */
-'use client';
-
 import React from 'react';
-import dynamic from 'next/dynamic';
 
 import { useAppSelector } from '@redux/hooks';
-
-const NewEditor = dynamic(() => import('./blocknote-editor/new-editor'), {
-  ssr: false,
-});
+import Page from '@editor/blocknote/Page';
 
 const App: React.FC = () => {
   const currentDate = useAppSelector((state) => state.date.currentDate);
@@ -17,7 +9,7 @@ const App: React.FC = () => {
 
   return (
     <React.Fragment>
-      <NewEditor currentDate={currentDate} title={title} />
+      <Page currentDate={currentDate} title={title} />
     </React.Fragment>
   );
 };

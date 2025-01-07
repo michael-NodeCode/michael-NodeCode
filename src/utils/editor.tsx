@@ -1,14 +1,9 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import {
-  BlockNoteEditor,
-  PartialBlock,
-} from '@blocknote/core';
-import '@blocknote/core/fonts/inter.css';
+import { BlockNoteEditor, PartialBlock } from '@blocknote/core';
 import {
   DefaultReactSuggestionItem,
   getDefaultReactSlashMenuItems,
 } from '@blocknote/react';
-import '@blocknote/mantine/style.css';
 import { HiOutlineGlobeAlt } from 'react-icons/hi';
 
 export const insertHelloWorldItem = (editor: BlockNoteEditor) => ({
@@ -84,12 +79,7 @@ export const getCustomSquareBracketMenuItems = (
         [
           {
             type: 'paragraph',
-            content: [
-              // {
-              //   type: 'text',
-              //   text: `Node: ${result.title}`,
-              // },
-            ],
+            content: [],
           },
         ],
         editor.getTextCursorPosition().block,

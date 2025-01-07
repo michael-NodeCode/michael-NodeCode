@@ -1,9 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import {
-  Block,
-  filterSuggestionItems,
-} from '@blocknote/core';
-import '@blocknote/core/fonts/inter.css';
+import { useEffect, useState } from 'react';
 import {
   DragHandleButton,
   SideMenu,
@@ -11,14 +7,16 @@ import {
   SuggestionMenuController,
   useCreateBlockNote,
 } from '@blocknote/react';
+import {
+  getCustomSlashMenuItems,
+  getCustomSquareBracketMenuItems,
+  searchForNode,
+} from '@utils/editor';
 import { BlockNoteView } from '@blocknote/mantine';
-import '@blocknote/mantine/style.css';
-import { useEffect, useState } from 'react';
-import { NavigateButton } from './editor/NaviagetButton';
-import { getCustomSlashMenuItems, getCustomSquareBracketMenuItems, searchForNode } from '@utils/editor';
+import { Block, filterSuggestionItems } from '@blocknote/core';
+import { NavigateButton } from '@components/editor/NaviagetButton';
 
-
-export default function NewEditor({
+export default function Page({
   currentDate,
   title,
 }: {
@@ -33,7 +31,12 @@ export default function NewEditor({
   const [isSquareBracketMenuVisible, setSquareBracketMenuVisible] =
     useState(false);
 
-  console.log(query, 'The query string to search for');
+  console.log(
+    query,
+    'The query string to search for',
+    'and title being:',
+    title
+  );
 
   useEffect(() => {
     const saveData = async () => {
@@ -131,7 +134,7 @@ export default function NewEditor({
     const handleEscKey = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         console.log('ESC pressed, hiding context menu');
-        setShowMenu(false); 
+        setShowMenu(false);
       }
     };
 
