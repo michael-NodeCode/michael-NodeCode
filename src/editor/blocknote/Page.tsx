@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { useEffect, useState } from 'react';
 import {
@@ -12,9 +13,11 @@ import {
   getCustomSquareBracketMenuItems,
   searchForNode,
 } from '@utils/editor';
+import { invoke } from '@tauri-apps/api/core';
 import { BlockNoteView } from '@blocknote/mantine';
 import { Block, filterSuggestionItems } from '@blocknote/core';
 import { NavigateButton } from '@components/editor/NaviagetButton';
+import { buildNodeStructure } from '@utils/build-node-structure';
 
 export default function Page({
   currentDate,
@@ -42,16 +45,16 @@ export default function Page({
     const saveData = async () => {
       if (currentDate && blocks.length > 0) {
         try {
-          const formattedBlocks = blocks.map((block) => JSON.stringify(block));
-          // const res = await invoke('save_node', {
-          //   heading,
-          //   subheading: subHeading,
-          //   blocks: formattedBlocks,
-          // });
-          // console.log('Response from save_node:', res);
-          // setText(res as string);
+          const finalData = buildNodeStructure(
+            currentDate,
+            blocks as any
+          );
 
-          console.log(formattedBlocks, 'Formatted Blocks from NE');
+          console.log('Final data structure:', finalData);
+          const response = await invoke<string>('insert_node_blocks', {
+            blocks: finalData,
+          });
+          console.log('Insert success:', response);
         } catch (error) {
           console.error('Error sending data to backend:', error);
         }
@@ -158,8 +161,83 @@ export default function Page({
       window.removeEventListener('keydown', handleEscKey);
     };
   }, []);
+
+  const [answer, setAnswer] = useState<string | null>(null);
+  async function greetSomeone() {
+    const msg = await invoke<string>('greet', { name: 'Alice' });
+    console.log(msg);
+    setAnswer(msg);
+  }
+
+  async function addPerson() {
+    try {
+      const result = await invoke<string>('create_person');
+      console.log(result);
+      setAnswer(result);
+    } catch (error) {
+      console.error('Error creating person:', error);
+    }
+  }
+
+  async function updateAndRead() {
+    try {
+      const result = await invoke<string>('update_and_select');
+      console.log(result);
+      setAnswer(result);
+    } catch (error) {
+      console.error('Error updating/selecting:', error);
+    }
+  }
+
+  async function fetchAllBlocks() {
+    try {
+      // const block = await invoke<any | null>('get_node_block_by_id', {
+      //   blockId: '79867f88-d964-4e92-8549-d83f9efa14e0',
+      // });
+      const blocks = await invoke<any[]>('get_all_node_blocks');
+      // console.log('All blocks:', block);
+      console.log('All blocks:', blocks);
+      // setAnswer(JSON.stringify(block, null, 2));
+      setAnswer(JSON.stringify(blocks, null, 2));
+    } catch (err) {
+      console.error('Error fetching all blocks:', err);
+    }
+  }
   return (
     <div className={'wrapper'}>
+      <p className="text-white text-xl w-full p-2">{answer}</p>
+      <div className="flex flex-row gap-4 justify-center items-center">
+        <button
+          type="submit"
+          className="p-2 bg-red-500 rounded-md text-white"
+          onClick={greetSomeone}
+        >
+          Greet
+        </button>
+        <button
+          type="submit"
+          className="p-2 bg-green-500 rounded-md text-white"
+          onClick={addPerson}
+        >
+          Add Person
+        </button>
+        <button
+          type="submit"
+          className="p-2 bg-blue-500 rounded-md text-white"
+          onClick={updateAndRead}
+        >
+          Updaet & Read
+        </button>
+        {/**
+        <button
+          type="submit"
+          className="p-2 bg-yellow-500 rounded-md text-white"
+          onClick={fetchAllBlocks}
+        >
+          Fetch All Blocks
+        </button>
+         */}
+      </div>
       <div className={'item'}>
         <BlockNoteView
           editor={editor}
