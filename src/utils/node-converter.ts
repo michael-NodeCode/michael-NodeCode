@@ -14,3 +14,11 @@ export function nodeDataToPartialBlock(
     children: node.children?.map((child) => nodeDataToPartialBlock(child)),
   };
 }
+
+
+// in place of taking single node as argument now we will pass whole array of nodes and convert them in to list of partial blocks
+export function nodeDataToPartialBlockList(
+  nodes: NodeData[]
+): PartialBlock<DefaultBlockSchema>[] {
+  return nodes.map((node) => nodeDataToPartialBlock(node));
+}

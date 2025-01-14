@@ -11,22 +11,28 @@ import {
 import {
   getCustomSlashMenuItems,
   getCustomSquareBracketMenuItems,
+  removeAllNodesFromEditorAndInsertLoadingPlaceholder,
   searchForNode,
 } from '@utils/editor';
-import { NodeData } from '../types/node';
+// import { NodeData } from '../types/node';
 import { useAppSelector } from '@redux/hooks';
 import { BlockNoteView } from '@blocknote/mantine';
 import { nodeDataToPartialBlock } from '@utils/node-converter';
 import { Block, filterSuggestionItems } from '@blocknote/core';
 import { NavigateButton } from '@components/editor/NaviagetButton';
+import { invoke } from '@tauri-apps/api/core';
+import { buildSingleNodeStructure } from '@utils/build-node-structure';
+import { NodeBlock } from '../types/node';
 
 export default function Page() {
   const { id } = useParams<{ id: string }>();
 
-  const nodes = useAppSelector((state) => state.node.nodeData);
+  // const nodes = useAppSelector((state) => state.node.node_data);
+  const currentDate = useAppSelector((state) => state.date.currentDate);
 
-  const [nodeData, setNodeData] = useState<NodeData | null>(null);
+  // const [nodeData, setNodeData] = useState<NodeData | null>(null);
   const [blocks, setBlocks] = useState<Block[]>([]);
+  const [navigatedNode, setNavigatedNode] = useState<NodeBlock | null>(null);
   const [query, setQuery] = useState('');
   const [showMenu, setShowMenu] = useState(false);
   const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
@@ -35,48 +41,99 @@ export default function Page() {
     useState(false);
 
   console.log(query, 'The query string to search for');
-  console.log(blocks, 'The updated blocks');
 
-  // Create a new and Empty Editor
-  const editor = useCreateBlockNote({
-    initialContent: [
-      {
-        id: 'loading-placeholder',
-        type: 'paragraph',
-        content: [
-          {
-            type: 'text',
-            text: 'Loading…',
-            styles: {},
-          },
-        ],
-      },
-    ],
-  });
+  const editor = useCreateBlockNote();
 
-  // Get the Data from store for the Node ID
   useEffect(() => {
-    if (!id) return;
-    const node = nodes.find((n: { id: string }) => n.id === id);
-    if (node) {
-      console.log(nodes, 'nodes');
-      setNodeData(node);
-    } else {
-      console.error('Node not found for ID:', id);
-    }
-  }, [id, nodes]);
+    let isMounted = true;
 
-  // Update the Editor with Data
+    async function fetchBlocksForDate(date: string) {
+      try {
+        removeAllNodesFromEditorAndInsertLoadingPlaceholder(editor);
+
+        const rootBlock = await invoke<any>('get_node_block_by_id', {
+          blockId: date,
+        });
+        const childrenBlocks = await invoke<any[]>('get_children_of_node', {
+          parentId: date,
+        });
+        if (!isMounted) return;
+
+        const fetchedData = rootBlock ? [rootBlock, ...childrenBlocks] : [];
+
+        const navigatedNode = fetchedData.find((node) => node.node_id === id);
+        if (!navigatedNode) {
+          console.error('Node not found:', id);
+          return;
+        }
+        console.log('Navigated Node:', navigatedNode);
+
+        setNavigatedNode(navigatedNode);
+        const partialBlocks = nodeDataToPartialBlock(
+          navigatedNode.node_type_content_json || []
+        );
+
+        editor.insertBlocks([partialBlocks], 'loading-placeholder', 'after');
+        editor.removeBlocks(['loading-placeholder']);
+
+        setBlocks(partialBlocks as Block[]);
+      } catch (err) {
+        console.error('Error fetching data for date:', date, err);
+      }
+    }
+
+    fetchBlocksForDate(currentDate);
+
+    return () => {
+      isMounted = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentDate, editor]);
+
   useEffect(() => {
-    if (nodeData && editor) {
-      const newBlocks = [nodeDataToPartialBlock(nodeData)];
-
-      editor.insertBlocks(newBlocks, 'loading-placeholder', 'after');
-      editor.removeBlocks(['loading-placeholder']);
+    if (!blocks || blocks.length === 0) {
+      return;
     }
-  }, [nodeData, editor]);
 
-  // For []
+    async function saveCurrentBlocks() {
+      try {
+        if (blocks && blocks.length > 0) {
+          blocks.forEach(async (block) => {
+            const finalData = buildSingleNodeStructure(
+              block as any,
+              navigatedNode?.parent_node_id,
+              navigatedNode?.left_sibling_node_id
+            );
+            if (!finalData) {
+              return;
+            }
+            const response = await invoke<string>('insert_node_blocks', {
+              blocks: [finalData],
+            });
+            console.log('Insert success:', response);
+          });
+        } else {
+          const finalData = buildSingleNodeStructure(
+            blocks as any,
+            navigatedNode?.parent_node_id,
+            navigatedNode?.left_sibling_node_id
+          );
+          if (!finalData) {
+            return;
+          }
+          const response = await invoke<string>('insert_node_blocks', {
+            blocks: [finalData],
+          });
+          console.log('Insert success:', response);
+        }
+      } catch (error) {
+        console.error('Error sending data to backend:', error);
+      }
+    }
+
+    saveCurrentBlocks();
+  }, [blocks, currentDate, navigatedNode]);
+
   useEffect(() => {
     const handleContentChange = () => {
       const currentText = '';
@@ -99,7 +156,6 @@ export default function Page() {
     };
   }, [editor]);
 
-  // For []
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       const lastChar = event.key;
@@ -120,7 +176,6 @@ export default function Page() {
     };
   }, [editor]);
 
-  //  for @
   useEffect(() => {
     const handleKeyPress = (event: KeyboardEvent) => {
       if (event.key === '@') {
@@ -184,13 +239,13 @@ export default function Page() {
     );
   }
 
-  if (!nodeData) {
-    return (
-      <div className="min-h-screen flex justify-center items-center text-center text-white">
-        Loading Node Data…
-      </div>
-    );
-  }
+  // if (!nodeData) {
+  //   return (
+  //     <div className="min-h-screen flex justify-center items-center text-center text-white">
+  //       Loading Node Data…
+  //     </div>
+  //   );
+  // }
 
   return (
     <div className={'wrapper'}>

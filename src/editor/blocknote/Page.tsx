@@ -11,6 +11,7 @@ import {
 import {
   getCustomSlashMenuItems,
   getCustomSquareBracketMenuItems,
+  removeAllNodesFromEditorAndInsertLoadingPlaceholder,
   searchForNode,
 } from '@utils/editor';
 import { invoke } from '@tauri-apps/api/core';
@@ -18,6 +19,8 @@ import { BlockNoteView } from '@blocknote/mantine';
 import { Block, filterSuggestionItems } from '@blocknote/core';
 import { NavigateButton } from '@components/editor/NaviagetButton';
 import { buildNodeStructure } from '@utils/build-node-structure';
+import { nodeDataToPartialBlockList } from '@utils/node-converter';
+import { sortBlocksByLeftSiblingAndReturnNodeJson } from '@utils/node-sorter';
 
 export default function Page({
   currentDate,
@@ -41,29 +44,7 @@ export default function Page({
     title
   );
 
-  useEffect(() => {
-    const saveData = async () => {
-      if (currentDate && blocks.length > 0) {
-        try {
-          const finalData = buildNodeStructure(
-            currentDate,
-            blocks as any
-          );
-
-          console.log('Final data structure:', finalData);
-          const response = await invoke<string>('insert_node_blocks', {
-            blocks: finalData,
-          });
-          console.log('Insert success:', response);
-        } catch (error) {
-          console.error('Error sending data to backend:', error);
-        }
-      }
-    };
-    saveData();
-  }, [currentDate, blocks]);
-
-  const editor = useCreateBlockNote({});
+  const editor = useCreateBlockNote();
 
   useEffect(() => {
     const handleContentChange = () => {
@@ -162,82 +143,74 @@ export default function Page({
     };
   }, []);
 
-  const [answer, setAnswer] = useState<string | null>(null);
-  async function greetSomeone() {
-    const msg = await invoke<string>('greet', { name: 'Alice' });
-    console.log(msg);
-    setAnswer(msg);
-  }
+  useEffect(() => {
+    let isMounted = true;
 
-  async function addPerson() {
-    try {
-      const result = await invoke<string>('create_person');
-      console.log(result);
-      setAnswer(result);
-    } catch (error) {
-      console.error('Error creating person:', error);
-    }
-  }
+    async function fetchBlocksForDate(date: string) {
+      try {
+        removeAllNodesFromEditorAndInsertLoadingPlaceholder(editor);
 
-  async function updateAndRead() {
-    try {
-      const result = await invoke<string>('update_and_select');
-      console.log(result);
-      setAnswer(result);
-    } catch (error) {
-      console.error('Error updating/selecting:', error);
-    }
-  }
+        const rootBlock = await invoke<any>('get_node_block_by_id', {
+          blockId: date,
+        });
+        const childrenBlocks = await invoke<any[]>('get_children_of_node', {
+          parentId: date,
+        });
+        if (!isMounted) return;
 
-  async function fetchAllBlocks() {
-    try {
-      // const block = await invoke<any | null>('get_node_block_by_id', {
-      //   blockId: '79867f88-d964-4e92-8549-d83f9efa14e0',
-      // });
-      const blocks = await invoke<any[]>('get_all_node_blocks');
-      // console.log('All blocks:', block);
-      console.log('All blocks:', blocks);
-      // setAnswer(JSON.stringify(block, null, 2));
-      setAnswer(JSON.stringify(blocks, null, 2));
-    } catch (err) {
-      console.error('Error fetching all blocks:', err);
+        const fetchedData = rootBlock ? [rootBlock, ...childrenBlocks] : [];
+
+        const sortedNodeJson = fetchedData
+          ? sortBlocksByLeftSiblingAndReturnNodeJson(fetchedData)
+          : [];
+
+        console.log('Sorted content Json Data:', sortedNodeJson);
+        const partialBlocks = nodeDataToPartialBlockList(sortedNodeJson);
+
+        editor.insertBlocks(partialBlocks, 'loading-placeholder', 'after');
+        editor.removeBlocks(['loading-placeholder']);
+
+        setBlocks(partialBlocks as Block[]);
+      } catch (err) {
+        console.error('Error fetching data for date:', date, err);
+      }
     }
-  }
+
+    fetchBlocksForDate(currentDate);
+
+    return () => {
+      isMounted = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentDate, editor]);
+
+  useEffect(() => {
+    if (!blocks || blocks.length === 0) {
+      return;
+    }
+
+    async function saveCurrentBlocks() {
+      try {
+        const finalData = buildNodeStructure(currentDate, blocks as any);
+
+        const response = await invoke<string>('insert_node_blocks', {
+          blocks: finalData,
+        });
+        console.log('Insert success:', response);
+      } catch (error) {
+        console.error('Error sending data to backend:', error);
+      }
+    }
+
+    const debounceTimer = setTimeout(() => {
+      saveCurrentBlocks();
+    }, 500);
+
+    return () => clearTimeout(debounceTimer);
+  }, [blocks, currentDate]);
+
   return (
     <div className={'wrapper'}>
-      <p className="text-white text-xl w-full p-2">{answer}</p>
-      <div className="flex flex-row gap-4 justify-center items-center">
-        <button
-          type="submit"
-          className="p-2 bg-red-500 rounded-md text-white"
-          onClick={greetSomeone}
-        >
-          Greet
-        </button>
-        <button
-          type="submit"
-          className="p-2 bg-green-500 rounded-md text-white"
-          onClick={addPerson}
-        >
-          Add Person
-        </button>
-        <button
-          type="submit"
-          className="p-2 bg-blue-500 rounded-md text-white"
-          onClick={updateAndRead}
-        >
-          Updaet & Read
-        </button>
-        {/**
-        <button
-          type="submit"
-          className="p-2 bg-yellow-500 rounded-md text-white"
-          onClick={fetchAllBlocks}
-        >
-          Fetch All Blocks
-        </button>
-         */}
-      </div>
       <div className={'item'}>
         <BlockNoteView
           editor={editor}
@@ -319,18 +292,6 @@ export default function Page({
           /> */}
         </BlockNoteView>
       </div>
-      {/* <div>Document/Response JSON:</div>
-        <div className="bg-red-400 text-black">
-          <pre>
-            <code>{JSON.stringify(initialBlocks, null, 2)}</code>
-          </pre>
-        </div>
-        <div>Blocks JSON:</div>
-        <div className="bg-red-400 text-black">
-          <pre>
-            <code>{JSON.stringify(blocks, null, 2)}</code>
-          </pre>
-        </div> */}
     </div>
   );
 }

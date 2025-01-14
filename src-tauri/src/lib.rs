@@ -50,8 +50,7 @@ pub fn run() {
             commands::insert_node_blocks,
             commands::get_all_node_blocks,
             commands::get_node_block_by_id,
-            commands::get_children_of_node,
-            commands::get_all_node_blocks_raw,
+            commands::get_children_of_node
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -1,5 +1,6 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { BlockNoteEditor, PartialBlock } from '@blocknote/core';
+import { Block, BlockNoteEditor, PartialBlock } from '@blocknote/core';
 import {
   DefaultReactSuggestionItem,
   getDefaultReactSlashMenuItems,
@@ -119,3 +120,22 @@ export const getCustomSquareBracketMenuItems = (
 
   return suggestionItems;
 };
+
+
+export  function removeAllNodesFromEditorAndInsertLoadingPlaceholder(editor: any) {
+  const allEditorBlocks: Block[] = editor.document;
+  const allEditorBlocksIds = allEditorBlocks.map((b) => b.id);
+  const rootBlock = {
+    id: 'loading-placeholder',
+    type: 'paragraph',
+    content: [
+      {
+        type: 'text',
+        text: 'Loading…',
+        styles: {},
+      },
+    ],
+  };
+  editor.insertBlocks([rootBlock], allEditorBlocksIds[0], 'after');
+  editor.removeBlocks(allEditorBlocksIds);
+}

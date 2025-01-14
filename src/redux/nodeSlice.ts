@@ -3,7 +3,7 @@ import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import type { NodeData, NodeState } from '../types/node';
 
 const initialState: NodeState = {
-  nodeData: [],
+  node_data: [],
 };
 
 const nodeSlice = createSlice({
@@ -11,19 +11,19 @@ const nodeSlice = createSlice({
   initialState,
   reducers: {
     saveNodeData(state, action: PayloadAction<NodeData>) {
-      const existingIndex = state.nodeData.findIndex(
+      const existingIndex = state.node_data.findIndex(
         (node) => node.id === action.payload.id
       );
       if (existingIndex > -1) {
-        state.nodeData[existingIndex] = action.payload;
+        state.node_data[existingIndex] = action.payload;
       } else {
-        state.nodeData.push(action.payload);
+        state.node_data.push(action.payload);
       }
     },
     getNodeData(state, action: PayloadAction<string>) {
-      const node = state.nodeData.find((node) => node.id === action.payload);
+      const node = state.node_data.find((node) => node.id === action.payload);
       if (node) {
-        state.nodeData = [node];
+        state.node_data = [node];
       }
     },
   },

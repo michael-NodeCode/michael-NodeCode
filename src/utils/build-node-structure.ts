@@ -1,8 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import {
-    v4 as uuidv4
-} from 'uuid';
+// import {
+//     v4 as uuidv4
+// } from 'uuid';
 import {
     DateNode,
     NodeBlock,
@@ -15,7 +15,8 @@ export function buildNodeStructure(
     rootDateString: string,
     blocks: NodeData[]
 ): NodeBlock[] {
-    const rootId = uuidv4();
+    // NOTE: for now we are saving date (root node as root id for easy access)
+    const rootId = rootDateString;
     const rootNode: DateNode = {
         node_id: rootId,
         node_block_type: NodeBlockTypes.DATE,
@@ -30,6 +31,7 @@ export function buildNodeStructure(
 
 
     let previousSiblingId: string | undefined = undefined;
+    blocks = blocks && blocks.length > 0 ? blocks.filter((block) => block.id !== 'loading-placeholder') : [];
     const childNodes: NodeBlock[] = blocks.map((block) => {
         const childId = block.id;
         const nodeBlockType = getNodeBlockType(block.type);
@@ -63,8 +65,6 @@ export function buildNodeStructure(
 
     return [rootNode, ...childNodes];
 }
-
-
 function getNodeBlockType(originalType: string): NodeBlockTypes {
     switch (originalType) {
         case 'paragraph':
@@ -77,7 +77,6 @@ function getNodeBlockType(originalType: string): NodeBlockTypes {
     }
 }
 
-
 function getCombinedText(block: NodeData): string {
     if (Array.isArray(block.content)) {
         return block.content
@@ -85,4 +84,36 @@ function getCombinedText(block: NodeData): string {
             .join(' ');
     }
     return '';
+}
+
+export function buildSingleNodeStructure(block: NodeData, parent_node_id: string | undefined, left_sibling_node_id: string| undefined): NodeBlock | null {
+    const nodeBlockType = getNodeBlockType(block.type);
+    const content = getCombinedText(block);
+    if (content === '') {
+        return null;
+    }
+
+    const node: NodeBlock = {
+        node_id: block.id,
+        node_block_type: nodeBlockType,
+        parent_node_id: parent_node_id,
+        left_sibling_node_id: left_sibling_node_id,
+        content: content,
+        node_type_content_json: block,
+        additional_props: {},
+        node_mentions: [],
+        vector: [],
+    };
+
+    if (nodeBlockType === NodeBlockTypes.TASK) {
+        node.content = getCombinedText(block);
+        node.additional_props = {
+            assignedTo: 'aman',
+            dueDate: '10th Jan 2025',
+        };
+    } else if (nodeBlockType === NodeBlockTypes.RICH_TEXT) {
+        node.content = getCombinedText(block);
+    }
+
+    return node;
 }

@@ -10,6 +10,8 @@ export interface NodeData {
 
 export interface NodeState {
     node_data: NodeData[];
+    left_sibling_node_id?: string;
+    parent_node_id?: string;
 }
 
 export enum NodeBlockTypes {

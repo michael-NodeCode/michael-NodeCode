@@ -1,4 +1,3 @@
-use serde_json::Value;
 use colored::Colorize;
 use tauri::{command, State};
 use crate::{
@@ -56,20 +55,6 @@ pub async fn get_all_node_blocks(state: State<'_, AppState>) -> Result<Vec<NodeB
 }
 
 #[command]
-pub async fn get_all_node_blocks_raw(
-    state: State<'_, AppState>
-) -> Result<Vec<Value>, String> {
-    let results: Vec<Value> = state
-        .db
-        .select("node_blocks")
-        .await
-        .map_err(|e| e.to_string())?;
-
-    println!("[get_all_node_blocks] Retrieved all node blocks");
-    Ok(results)
-}
-
-#[command]
 pub async fn get_node_block_by_id(
     state: State<'_, AppState>,
     block_id: String,
@@ -92,7 +77,7 @@ pub async fn get_children_of_node(
     state: State<'_, AppState>,
     parent_id: String,
 ) -> Result<Vec<NodeBlock>, String> {
-    let sql = "SELECT * FROM node_blocks WHERE parentNodeId = $parent";
+    let sql = "SELECT * FROM node_blocks WHERE parent_node_id = $parent";
     let mut result = state
         .db
         .query(sql)
