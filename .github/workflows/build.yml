@@ -1,4 +1,4 @@
-name: 'Build and Publish Release'
+name: Build and Publish Release For NodeCode
 
 on:
   push:
@@ -7,6 +7,8 @@ on:
 
 jobs:
   create-release:
+    env:
+      SENTRY_AUTH_TOKEN: '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'
     permissions:
       contents: write
     runs-on: ubuntu-20.04
@@ -19,7 +21,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '18.x'
+          node-version: lts/*
 
       - name: Get Version
         run: |
@@ -40,34 +42,44 @@ jobs:
               draft: true,
               prerelease: false
             });
-            core.setOutput('release_id', data.id);
+            core.setOutput('release_id', data.id)
 
   build-tauri:
     needs: create-release
     permissions:
       contents: write
+
     strategy:
       fail-fast: false
       matrix:
-        platform:
-          - { os: macos-latest, arch: arm64 }
-          - { os: macos-latest, arch: x86_64 }
-          - { os: windows-latest, arch: x86_64 }
+        include:
+          - os: macos-latest
+            target: aarch64-apple-darwin
 
-    runs-on: ${{ matrix.platform.os }}
+          - os: macos-latest
+            target: x86_64-apple-darwin
+
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v3
 
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '18.x'
+          node-version: lts/*
 
       - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
 
-      - name: Install Frontend Dependencies
-        run: npm install
+      - name: Install aarch64 Target (if needed)
+        if: matrix.target == 'aarch64-apple-darwin'
+        run: rustup target add aarch64-apple-darwin
 
       - name: Cache Node.js Dependencies
         uses: actions/cache@v3
@@ -83,9 +95,13 @@ jobs:
           path: |
             ~/.cargo
             ~/.rustup
+            target
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.toml') }}
           restore-keys: |
             ${{ runner.os }}-cargo-
+
+      - name: Install Frontend Dependencies
+        run: npm install
 
       - name: Build Tauri App
         uses: tauri-apps/tauri-action@v0
@@ -94,13 +110,13 @@ jobs:
           CMAKE_BUILD_TYPE: Release
         with:
           releaseId: ${{ needs.create-release.outputs.release_id }}
+          args: '--target ${{ matrix.target }}'
 
   publish-release:
+    needs: [create-release, build-tauri]
     permissions:
       contents: write
     runs-on: ubuntu-20.04
-    needs: [create-release, build-tauri]
-
     steps:
       - name: Publish Release
         id: publish-release
@@ -110,7 +126,7 @@ jobs:
         with:
           script: |
             const releaseId = process.env.release_id;
-            github.rest.repos.updateRelease({
+            await github.rest.repos.updateRelease({
               owner: context.repo.owner,
               repo: context.repo.repo,
               release_id: releaseId,

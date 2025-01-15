@@ -1,6 +1,6 @@
-### NodeCode v1.3.0
+### NodeCode v1.5.0
 
-> Uses Tauri, Next JS, Rusqlite, and Tailwind CSS
+> Uses Tauri, Vite, and Tailwind CSS
 
 ### Development
 ```bash

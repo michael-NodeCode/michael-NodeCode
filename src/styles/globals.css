@@ -16,15 +16,51 @@
   --black-shadow-color: 0 4px 6px rgba(7, 7, 7, 0.5);
 }
 
-/* blocksuite container */
-.app {
+/* Blocknote-editor */
+/* BlockNote Styles */
+.wrapper {
   display: flex;
-  font-family: sans-serif;
+  flex-direction: column;
+  height: 100%;
+  overflow-y: auto;
 }
 
-.main-content {
+.item {
+  border-radius: 0.5rem;
   flex: 1;
+  overflow: hidden;
 }
+
+.item.bordered {
+  border: 1px solid gray;
+}
+
+.item pre {
+  border-radius: 0.5rem;
+  height: 100%;
+  overflow: auto;
+  padding-block: 1rem;
+  padding-inline: 54px;
+  width: 100%;
+  white-space: pre-wrap;
+}
+
+/* Blocknote-editor */
+
+
+/* global css | Custom Editor */
+/* .prose ul ul,
+.prose ol ol,
+.prose ul ol,
+.prose ol ul {
+  margin-left: 0rem;
+  border-left: 2px solid #666;
+  position: relative;
+}
+
+.prose ul {
+  list-style: none; 
+} */
 
 /* hide scroll bar */
 ::-webkit-scrollbar-track {

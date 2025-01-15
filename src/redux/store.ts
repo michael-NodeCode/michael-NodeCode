@@ -1,10 +1,12 @@
 import { configureStore, combineReducers } from '@reduxjs/toolkit';
 import dateReducer from './dateSlice';
 import titleReducer from './titleSlice';
+import nodeReducer from './nodeSlice';
 
 const rootReducer = combineReducers({
     date: dateReducer,
     title: titleReducer,
+    node: nodeReducer,
 });
 
 export const store = configureStore({
