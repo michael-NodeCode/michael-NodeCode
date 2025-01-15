@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { SideMenuProps, useComponentsContext } from '@blocknote/react';
 import { useAppDispatch, useAppSelector } from '@redux/hooks';
 import { saveNodeData } from '@redux/nodeSlice';
@@ -17,7 +18,17 @@ export function NavigateButton(props: SideMenuProps) {
     const { block } = props;
     console.log('Navigating to block', block);
     dispatch(saveNodeData(block as unknown as NodeData));
-    const title = `${date} -> ${block.id}`;
+    const blockContent =
+      Array.isArray(block.content) && block.content.length > 0
+        ? block.content[0]
+        : '';
+    console.log('blockContent', blockContent);
+    const blockContentText = (blockContent as any).text || block.id;
+    let blockSubstring = blockContentText.substring(0, 20);
+    if (blockSubstring.length < blockContentText.length) {
+      blockSubstring += '...';
+    }
+    const title = `${date} : ${blockSubstring}`;
     dispatch({
       type: 'title/setTitle',
       payload: title,
